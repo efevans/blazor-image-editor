@@ -1,0 +1,69 @@
+﻿@page "/projects"
+@implements IDisposable
+@inject IProjectService ProjectService
+@inject ILogger<Projects> Logger
+@inject PersistentComponentState ApplicationState
+@rendermode InteractiveAuto
+@* @rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false)) *@
+
+<PageTitle>Projects</PageTitle>
+
+<h3>Projects</h3>
+
+@if (MyProjects?.Any() ?? false)
+{
+    <MudStack Row Class="d-flex flex-row flex-wrap justify-space-between" Style="row-gap: 2rem !important;">
+        @foreach (var project in MyProjects)
+        {
+            <MudCard Elevation="2" Style="width: 25rem;">
+                <MudCardMedia Image="@("images/" + project.ImageSrc)" Height="200" />
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText>@project.Title</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudText Typo="Typo.body2">@project.Description</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudIconButton Target="_blank" Icon="@Icons.Custom.Brands.GitHub" Href="@("https://github.com/" + project.GithubUrl)" Color="Color.Inherit" Size="Size.Large" />
+                    <MudIconButton Target="_blank" Icon="@Icons.Material.Filled.VideogameAsset" Href="@project.ItchIoUrl" Color="Color.Inherit" Size="Size.Large" />
+                </MudCardActions>
+            </MudCard>
+        }
+    </MudStack>
+}
+else
+{
+    <h4>Loading projects list...</h4>
+}
+
+@code {
+    List<Project> MyProjects = new();
+    PersistingComponentStateSubscription _persistintSubscription;
+
+    protected async override Task OnInitializedAsync()
+    {
+        _persistintSubscription = ApplicationState.RegisterOnPersisting(PersistData);
+
+        if (!ApplicationState.TryTakeFromJson<List<Project>>(nameof(MyProjects), out var restoredProjects))
+        {
+            MyProjects = await ProjectService.GetProjects();
+            Logger.LogInformation("MyProjects set to {Projects}", MyProjects);
+        }
+        else
+        {
+            MyProjects = restoredProjects ?? new List<Project>();
+            Logger.LogInformation("MyProjects restored to {Projects}", MyProjects);
+        }
+    }
+
+    private Task PersistData()
+    {
+        ApplicationState.PersistAsJson(nameof(MyProjects), MyProjects);
+
+        return Task.CompletedTask;
+    }
+
+    void IDisposable.Dispose() => _persistintSubscription.Dispose();
+}
