@@ -1,270 +1,122 @@
 ﻿@page "/canvas"
-@rendermode InteractiveAuto
+@using System.Runtime.InteropServices.JavaScript
+@rendermode InteractiveWebAssembly
 
 <h3 id="canvas-title">Canvas</h3>
-<input id="input-file" type="file" accept="image/*" />
-<button id="reset-button" class="btn btn-primary" onclick="reset()">Reset</button>
-<button id="dither-button" class="btn btn-primary" onclick="dither()">Dither</button>
-<button id="invert-button" class="btn btn-primary" onclick="invert()">Invert</button>
-<button id="darken-half-button" class="btn btn-primary" onclick="darkenHalf()">Half Darken</button>
-<button id="gamma-correction-button" class="btn btn-primary" onclick="gammaCorrection()">Gamma Correction</button>
-<button id="pixelate-button" class="btn btn-primary" onclick="pixelate()">Pixelate</button>
-<button id="save-button" class="btn btn-primary" onclick="save()">Save</button>
-<canvas id="tutorial" style="border: 1px solid black"></canvas>
-<div style="border: 1px solid black; max-width: 150px; max-height: 150px;">
-    <img id="free-image" src="images/test.png" style="width: 100%;" />
+@* <input id="input-file" type="file" accept="image/*" /> *@
+<MudFileUpload id="@FileInputId" Disabled="!IsAssemblyLoaded" T="IBrowserFile" FilesChanged="HandleFileUploaded" Accept="image/*" MaximumFileCount="1">
+    <ButtonTemplate>
+        <MudFab HtmlTag="label"
+                Color="Color.Primary"
+                StartIcon="@Icons.Material.Filled.Image"
+                Label="Upload Image"
+                for="@FileInputId" />
+    </ButtonTemplate>
+</MudFileUpload>
+<div class="d-flex flex-row gap-2 my-2">
+    <MudButton Color="Color.Secondary" Variant="Variant.Filled" OnClick="HandleReset">Reset</MudButton>
+    <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleSave">Save</MudButton>
 </div>
-
-
-<script>
-    var cleanImageData;
-    var inputFile = document.getElementById("input-file");
-    // var canvas = document.getElementById("tutorial");
-    // var ctx = canvas.getContext("2d");
-
-    inputFile.addEventListener("change", uploadImage);
-
-    function uploadImage() {
-        const imgLink = URL.createObjectURL(inputFile.files[0]);
-        const imgElement = document.getElementById("free-image");
-        imgElement.src = imgLink;
-        const img = new Image();
-        img.src = imgLink;
-        var targetImg = img;
-        targetImg.onload = function () {
-            console.log("uploaded");
-
-            var canvas = document.getElementById("tutorial");
-            canvas.width = targetImg.naturalWidth;
-            canvas.height = targetImg.naturalHeight;
-            canvasStyleWidth = getClosestWidthForContainer(targetImg);
-            canvas.style.width = canvasStyleWidth + 'px';
-            canvas.style.height = (canvasStyleWidth * (canvas.height / canvas.width)) + 'px';
-
-            const ctx = canvas.getContext("2d");
-            ctx.imageSmoothingEnabled = true;
-            ctx.drawImage(targetImg, 0, 0);
-            cleanImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        }
-    }
-
-    function reset() {
-        console.log('inverting colors');
-        var canvas = document.getElementById("tutorial");
-        var ctx = canvas.getContext("2d");
-        ctx.putImageData(cleanImageData, 0, 0);
-    }
-
-    function dither() {
-        console.log('dithering image');
-        var canvas = document.getElementById("tutorial");
-        var ctx = canvas.getContext("2d");
-        var width = canvas.width;
-        var height = canvas.height;
-        const imageData = ctx.getImageData(0, 0, width, height);
-        const data = imageData.data;
-        const correctionValues = Array(data.length).fill(0);
-        const thresholdValue = 255 * 3 / 2;
-        for (let i = 0; i < data.length; i += 4) {
-            var accumulatedValue = data[i] + data[i + 1] + data[i + 2] + (correctionValues[i] ?? 0);
-            var correctionValue = 0;
-            if (accumulatedValue >= thresholdValue) {
-                data[i] = 255;
-                data[i + 1] = 255;
-                data[i + 2] = 255;
-                correctionValue = accumulatedValue - 765;
-            } else {
-                data[i] = 0;
-                data[i + 1] = 0;
-                data[i + 2] = 0;
-                correctionValue = accumulatedValue;
-            }
-            var coords = getCoordsForIndex(i, canvas);
-            if (!coordIsOnRightEdge(coords, canvas)) {
-                let rightIndex = getIndexForCoords([coords[0] + 1, coords[1]], canvas);
-                let addedValue = Math.round(correctionValue * 7.0 / 16.0);
-                let existingValue = (correctionValues[rightIndex] ?? 0.0);
-                correctionValues[rightIndex] = addedValue + existingValue;
-            }
-            if (!coordIsOnLeftEdge(coords, canvas) && !coordIsOnBottomEdge(coords, canvas)) {
-                let bottomLeftIndex = getIndexForCoords([coords[0] - 1, coords[1] + 1], canvas);
-                correctionValues[bottomLeftIndex] = Math.round(correctionValue * 3.0 / 16.0) + (correctionValues[bottomLeftIndex] ?? 0.0);
-            }
-            if (!coordIsOnBottomEdge(coords, canvas)) {
-                let bottomIndex = getIndexForCoords([coords[0], coords[1] + 1], canvas);
-                correctionValues[bottomIndex] = Math.round(correctionValue * 5.0 / 16.0) + (correctionValues[bottomIndex] ?? 0.0);
-            }
-            if (!coordIsOnRightEdge(coords, canvas) && !coordIsOnBottomEdge(coords, canvas)) {
-                let bottomRightIndex = getIndexForCoords([coords[0] + 1, coords[1] + 1], canvas);
-                correctionValues[bottomRightIndex] = Math.round(correctionValue * 1.0 / 16.0) + (correctionValues[bottomRightIndex] ?? 0.0);
-            }
-        }
-        ctx.putImageData(imageData, 0, 0);
-    }
-
-    function invert() {
-        console.log('inverting colors');
-        var canvas = document.getElementById("tutorial");
-        var ctx = canvas.getContext("2d");
-        var width = canvas.width;
-        var height = canvas.height;
-        const imageData = ctx.getImageData(0, 0, width, height);
-        const data = imageData.data;
-        for (let i = 0; i < data.length; i += 4) {
-            data[i] = 255 - data[i];
-            data[i + 1] = 255 - data[i + 1];
-            data[i + 2] = 255 - data[i + 2];
-        }
-        ctx.putImageData(imageData, 0, 0);
-    }
-
-    function darkenHalf() {
-        console.log('darkening');
-        var canvas = document.getElementById("tutorial");
-        var ctx = canvas.getContext("2d");
-        var width = canvas.width;
-        var height = canvas.height;
-        const imageData = ctx.getImageData(0, 0, width, height);
-        const data = imageData.data;
-        for (let i = 0; i < data.length; i += 4) {
-            if (i >= width * height * 2) {
-                var coords = getCoordsForIndex(i, canvas);
-                var testedIndex = getIndexForCoords(coords, canvas);
-                console.log("terminating at x: " + coords[0] + ", y: " + coords[1]);
-                console.log("tested index: " + testedIndex + ", actual: " + i);
-                break;
-            }
-            data[i] = 255 - data[i]; // red
-            data[i + 1] = 255 - data[i + 1]; // green
-            data[i + 2] = 255 - data[i + 2]; // blue
-        }
-        ctx.putImageData(imageData, 0, 0);
-    }
-
-    function gammaCorrection() {
-        const canvas = document.getElementById("tutorial");
-        const ctx = canvas.getContext("2d");
-        const width = canvas.width;
-        const height = canvas.height;
-        const imageData = ctx.getImageData(0, 0, width, height);
-        const data = imageData.data;
-        gammaCorrectData(data);
-        ctx.putImageData(imageData, 0, 0);
-    }
-
-    function pixelate() {
-        console.log('pixelating');
-        const canvas = document.getElementById("tutorial");
-        const ctx = canvas.getContext("2d");
-        const width = canvas.width;
-        const height = canvas.height;
-        const imageData = ctx.getImageData(0, 0, width, height);
-        const data = imageData.data;
-        const pixelationStrength = 2 ** 4;
-        for (let i = 0; i < data.length; i += 4) {
-            const coords = getCoordsForIndex(i, canvas);
-            const parentX = coords[0] - (coords[0] % pixelationStrength);
-            const parentY = coords[1] - (coords[1] % pixelationStrength);
-            const parentIndex = getIndexForCoords([parentX, parentY], canvas);
-            copyColorsToIndex(parentIndex, i, data);
-        }
-        ctx.putImageData(imageData, 0, 0);
-    }
-
-    function getClosestWidthForContainer(img) {
-        containerWidth = 900;
-        
-        var currentTestWidth = img.naturalWidth;
-        while (true) {
-            if (currentTestWidth < containerWidth) {
-                return currentTestWidth;
-            }
-            currentTestWidth /= 2;
-        }
-    }
-
-    function save() {
-        console.log('saving');
-        const canvas = document.getElementById("tutorial");
-        const image = canvas.toDataURL("image/png");
-
-        let link = document.createElement('a');
-        link.download = "image-edit.png";
-        link.href = image;
-        link.click();
-    }
-
-    function gammaCorrectData(data) {
-        let correctFunction = function(value) {
-            return Math.pow(value, .7);
-        }
-        for (let i = 0; i < data.length; i += 4) {
-            data[i] = correctFunction(data[i]);
-            data[i + 1] = correctFunction(data[i + 1]);
-            data[i + 2] = correctFunction(data[i + 2]);
-        }
-        return data;
-    }
-
-    function getCoordsForIndex(i, canvas) {
-        var coords = [];
-        var width = canvas.width;
-        var height = canvas.height;
-        var x = (i % (width * 4)) / 4;
-        var tempI = i - (x * 4);
-        var y = (tempI / (width * 4));
-        coords.push(x, y);
-        return coords;
-    }
-
-    function getIndexForCoords(coords, canvas) {
-        var width = canvas.width;
-        var height = canvas.height;
-        var index = ((coords[0]) + (coords[1] * width)) * 4;
-        return index;
-    }
-
-    function coordIsOnLeftEdge(coords, canvas) {
-        return coords[0] == 0;
-    }
-
-    function coordIsOnRightEdge(coords, canvas) {
-        return (coords[0] + 1) == canvas.width;
-    }
-
-    function coordIsOnBottomEdge(coords, canvas) {
-        return (coords[1] + 1) == canvas.height;
-    }
-
-    function getColorIndicesForIndex(index) {
-    return [index, index + 1, index + 2, index + 3];
-    }
-
-    function copyColorsToIndex(fromIndex, toIndex, colorData) {
-        const [parentRedIndex, parentGreenIndex, parentBlueIndex, parentAlphaIndex] = getColorIndicesForIndex(fromIndex);
-        const [childRedIndex, childGreenIndex, childBlueIndex, childAlphaIndex] = getColorIndicesForIndex(toIndex);
-        colorData[childRedIndex] = colorData[parentRedIndex];
-        colorData[childGreenIndex] = colorData[parentGreenIndex];
-        colorData[childBlueIndex] = colorData[parentBlueIndex];
-        colorData[childAlphaIndex] = colorData[parentAlphaIndex];
-    }
-
-    function draw() {
-        console.log("draw");
-        const canvas = document.getElementById("tutorial");
-        if (canvas.getContext) {
-            const ctx = canvas.getContext("2d");
-
-            ctx.fillStyle = "rgb(200 0 0)";
-            ctx.fillRect(10, 10, 50, 50);
-
-            ctx.fillStyle = "rgb(0 0 200 / 50%)";
-            ctx.fillRect(30, 30, 50, 50);
-        }
-    }
-    window.addEventListener("load", draw);
-</script>
+<div class="d-flex flex-row gap-2 my-2">
+    <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleDither">Dither</MudButton>
+    <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleInvert">Invert</MudButton>
+    <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleHalfInvert">Half Darken</MudButton>
+    <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleGammaCorrection">Gamma Correction</MudButton>
+    <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandlePixelate">Pixelate</MudButton>
+</div>
+<canvas id="@CanvasId" style="border: 1px solid black"></canvas>
+<canvas id="@CleanCanvasId" style="display: none;"></canvas>
 
 @code {
+    private const string ClassName = "ArtCanvas";
+    private const string CanvasId = "tutorial";
+    private const string CleanCanvasId = "clean-canvas";
+    private const string FileInputId = "mud-file-uploader";
 
+    private bool IsAssemblyLoaded = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (OperatingSystem.IsBrowser())
+        {
+            await JSHost.ImportAsync(ClassName,
+                $"../Pages/{ClassName}.razor.js");
+
+            Log("I'm logging from interop!");
+            IsAssemblyLoaded = true;
+        }
+    }
+
+    private void HandleFileUploaded(IBrowserFile _)
+    {
+        if (OperatingSystem.IsBrowser())
+        {
+            Log("File Uploaded");
+            UploadImage(FileInputId, CanvasId, CleanCanvasId);
+        }
+    }
+
+    private void HandleSave()
+    {
+        if (OperatingSystem.IsBrowser())
+        {
+            Log("Save File");
+            SaveImage(CanvasId);
+        }
+    }
+
+    private void HandleReset()
+    {
+        if (OperatingSystem.IsBrowser())
+        {
+            Log("File Reset");
+            ResetImage(CanvasId, CleanCanvasId);
+        }
+    }
+
+    private void HandleDither()
+    {
+        if (OperatingSystem.IsBrowser())
+        {
+            Log("ApplyDither");
+            ApplyDither(CanvasId);
+        }
+    }
+
+    private void HandleInvert()
+    {
+        if (OperatingSystem.IsBrowser())
+        {
+            Log("ApplyInvert");
+            ApplyInvert(CanvasId);
+        }
+    }
+
+    private void HandleHalfInvert()
+    {
+        if (OperatingSystem.IsBrowser())
+        {
+            Log("ApplyHalfInvert");
+            ApplyHalfInvert(CanvasId);
+        }
+    }
+
+    private void HandleGammaCorrection()
+    {
+        if (OperatingSystem.IsBrowser())
+        {
+            Log("ApplyGammaCorrection");
+            ApplyGammaCorrection(CanvasId);
+        }
+    }
+
+    private void HandlePixelate()
+    {
+        if (OperatingSystem.IsBrowser())
+        {
+            Log("ApplyPixelate");
+            Log("ApplyPixelate");
+            ApplyPixelate(CanvasId);
+        }
+    }
 }
