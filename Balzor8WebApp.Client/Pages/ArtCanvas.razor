@@ -66,6 +66,8 @@ else if (ImageIsUploaded)
     {
         Effects.UpdateOrder(dropItem, item => item.Order);
         Effects.Sort((e1, e2) => e1.Order > e2.Order ? 1 : -1);
+        ResetImage(MainCanvasId, CleanCanvasId);
+        ApplyEffects();
         Log(String.Join(", ", Effects.Select(e => e.Effect.ToString() + ": " + e.Order)));
     }
 
@@ -137,17 +139,17 @@ else if (ImageIsUploaded)
         }
     }
 
+    private void ApplyEffect(Effect effect)
+    {
+        EffectOperations[effect](MainCanvasId);
+    }
+
     private void ApplyEffects()
     {
         foreach (var effect in Effects)
         {
-            EffectOperations[effect.Effect](MainCanvasId);
+            ApplyEffect(effect.Effect);
         }
-    }
-
-    private void ApplyEffect(Effect effect)
-    {
-        EffectOperations[effect](MainCanvasId);
     }
 
     private void AddEffect(Effect effect, bool apply = true)
