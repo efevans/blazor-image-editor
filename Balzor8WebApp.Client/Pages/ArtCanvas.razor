@@ -1,8 +1,8 @@
 ﻿@page "/canvas"
 @using System.Runtime.InteropServices.JavaScript
+@using MudBlazor.Utilities
 @rendermode InteractiveWebAssembly
 
-<h3 id="canvas-title">Image Edit</h3>
 <MudFileUpload id="@FileInputId" Disabled="!AssemblyIsLoaded" T="IBrowserFile" FilesChanged="HandleFileUploaded" Accept="image/*" MaximumFileCount="1">
     <ButtonTemplate>
         <MudFab HtmlTag="label"
@@ -35,7 +35,7 @@ else if (ImageIsUploaded)
     <MudStack Row="true" Style="margin-right: -20rem;" Class="flex-grow-1">
         <canvas id="@MainCanvasId" class="flex-grow-0" style="border: 1px solid black;"></canvas>
         <MudSpacer />
-        <MudDropContainer @ref="EffectsUIListRef" T="EffectItem" Items="Effects" ItemsSelector="@((item,dropzone) => true)" Class="d-flex flex-wrap flex-grow-0 align-start" Style="width: 30rem;">
+        <MudDropContainer @ref="EffectsUIListRef" T="EffectItem" Items="Effects" ItemsSelector="@((item,dropzone) => true)" ItemDropped="ItemUpdated" Class="d-flex flex-wrap flex-grow-0 align-start" Style="width: 30rem;">
             <ChildContent>
                 <MudPaper Class="ml-4 flex-grow-1">
                     <MudList Clickable="true" Class="d-flex flex-column">
@@ -45,7 +45,7 @@ else if (ImageIsUploaded)
                 </MudPaper>
             </ChildContent>
             <ItemRenderer>
-                <MudListItem Text="@context.Effect.ToString()" />
+                <MudListItem Text="@($"{context.Effect.ToString()} ({context.Order})")" />
             </ItemRenderer>
         </MudDropContainer>
     </MudStack>
@@ -64,7 +64,9 @@ else if (ImageIsUploaded)
 
     private void ItemUpdated(MudItemDropInfo<EffectItem> dropItem)
     {
-
+        Effects.UpdateOrder(dropItem, item => item.Order);
+        Effects.Sort((e1, e2) => e1.Order > e2.Order ? 1 : -1);
+        Log(String.Join(", ", Effects.Select(e => e.Effect.ToString() + ": " + e.Order)));
     }
 
     private List<EffectItem> Effects = new();
@@ -72,6 +74,7 @@ else if (ImageIsUploaded)
     private class EffectItem
     {
         public Effect Effect { get; init; }
+        public int Order { get; set; }
     }
 
     private enum Effect
@@ -149,7 +152,7 @@ else if (ImageIsUploaded)
 
     private void AddEffect(Effect effect, bool apply = true)
     {
-        Effects.Add(new EffectItem { Effect = effect });
+        Effects.Add(new EffectItem { Effect = effect, Order = Effects.Count });
         EffectsUIListRef.Refresh();
 
         if (apply)
