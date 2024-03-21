@@ -12,7 +12,7 @@
                 for="@FileInputId" />
     </ButtonTemplate>
 </MudFileUpload>
-@if(!AssemblyIsLoaded)
+@if (!AssemblyIsLoaded)
 {
     <div class="d-flex flex-row justify-center" style="min-height: 25rem;">
         <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
@@ -31,8 +31,24 @@ else if (ImageIsUploaded)
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleGammaCorrection">Gamma Correction</MudButton>
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandlePixelate">Pixelate</MudButton>
     </div>
-    <canvas id="@MainCanvasId" style="border: 1px solid black"></canvas>
     <canvas id="@CleanCanvasId" style="display: none;"></canvas>
+    <MudStack Row="true" Style="margin-right: -20rem;" Class="flex-grow-1">
+        <canvas id="@MainCanvasId" class="flex-grow-0" style="border: 1px solid black;"></canvas>
+        <MudSpacer />
+        <MudDropContainer @ref="EffectsUIListRef" T="EffectItem" Items="Effects" ItemsSelector="@((item,dropzone) => true)" Class="d-flex flex-wrap flex-grow-0 align-start" Style="width: 30rem;">
+            <ChildContent>
+                <MudPaper Class="ml-4 flex-grow-1">
+                    <MudList Clickable="true" Class="d-flex flex-column">
+                        <MudListSubheader>Effects</MudListSubheader>
+                        <MudDropZone T="EffectItem" Identifier="1" Class="flex-grow-1" AllowReorder="true" />
+                    </MudList>
+                </MudPaper>
+            </ChildContent>
+            <ItemRenderer>
+                <MudListItem Text="@context.Effect.ToString()" />
+            </ItemRenderer>
+        </MudDropContainer>
+    </MudStack>
 }
 
 @code {
@@ -44,7 +60,21 @@ else if (ImageIsUploaded)
     private bool AssemblyIsLoaded = false;
     private bool ImageIsUploaded = false;
 
-    enum Effect
+    private MudDropContainer<EffectItem> EffectsUIListRef { get; set; } = null!;
+
+    private void ItemUpdated(MudItemDropInfo<EffectItem> dropItem)
+    {
+
+    }
+
+    private List<EffectItem> Effects = new();
+
+    private class EffectItem
+    {
+        public Effect Effect { get; init; }
+    }
+
+    private enum Effect
     {
         Dither,
         Invert,
@@ -61,8 +91,6 @@ else if (ImageIsUploaded)
         { Effect.GammaCorrect, ArtCanvas.ApplyGammaCorrection },
         { Effect.Pixelate, ArtCanvas.ApplyPixelate },
     };
-
-    List<Effect> Effects = new List<Effect>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -102,6 +130,15 @@ else if (ImageIsUploaded)
             Log("File Reset");
             Effects.Clear();
             ResetImage(MainCanvasId, CleanCanvasId);
+            EffectsUIListRef.Refresh();
+        }
+    }
+
+    private void ApplyEffects()
+    {
+        foreach (var effect in Effects)
+        {
+            EffectOperations[effect.Effect](MainCanvasId);
         }
     }
 
@@ -110,11 +147,14 @@ else if (ImageIsUploaded)
         EffectOperations[effect](MainCanvasId);
     }
 
-    private void ApplyEffects()
+    private void AddEffect(Effect effect, bool apply = true)
     {
-        foreach (var effect in Effects)
+        Effects.Add(new EffectItem { Effect = effect });
+        EffectsUIListRef.Refresh();
+
+        if (apply)
         {
-            EffectOperations[effect](MainCanvasId);
+            ApplyEffect(effect);
         }
     }
 
@@ -123,8 +163,7 @@ else if (ImageIsUploaded)
         if (OperatingSystem.IsBrowser())
         {
             Log("ApplyDither");
-            Effects.Add(Effect.Dither);
-            ApplyEffect(Effect.Dither);
+            AddEffect(Effect.Dither);
         }
     }
 
@@ -133,8 +172,7 @@ else if (ImageIsUploaded)
         if (OperatingSystem.IsBrowser())
         {
             Log("ApplyInvert");
-            Effects.Add(Effect.Invert);
-            ApplyEffect(Effect.Invert);
+            AddEffect(Effect.Invert);
         }
     }
 
@@ -143,8 +181,7 @@ else if (ImageIsUploaded)
         if (OperatingSystem.IsBrowser())
         {
             Log("ApplyHalfInvert");
-            Effects.Add(Effect.HalfInvert);
-            ApplyEffect(Effect.HalfInvert);
+            AddEffect(Effect.HalfInvert);
         }
     }
 
@@ -153,8 +190,7 @@ else if (ImageIsUploaded)
         if (OperatingSystem.IsBrowser())
         {
             Log("ApplyGammaCorrection");
-            Effects.Add(Effect.GammaCorrect);
-            ApplyEffect(Effect.GammaCorrect);
+            AddEffect(Effect.GammaCorrect);
         }
     }
 
@@ -163,8 +199,7 @@ else if (ImageIsUploaded)
         if (OperatingSystem.IsBrowser())
         {
             Log("ApplyPixelate");
-            Effects.Add(Effect.Pixelate);
-            ApplyEffect(Effect.Pixelate);
+            AddEffect(Effect.Pixelate);
         }
     }
 }
