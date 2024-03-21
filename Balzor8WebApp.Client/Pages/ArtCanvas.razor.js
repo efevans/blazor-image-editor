@@ -2,14 +2,14 @@ export function consoleLog(msg) {
     console.log(msg);
 }
 
-export function uploadImage(fileInputId, canvasId, cleanCanvasId) {
-    const imgLink = URL.createObjectURL(document.getElementById(fileInputId).files[0]);
+window.previewImage = (inputElement, canvasElement, cleanCanvasElement) => {
+    const imgLink = URL.createObjectURL(inputElement.files[0]);
     const img = new Image();
     img.src = imgLink;
     var targetImg = img;
     targetImg.onload = function () {
-        var canvas = document.getElementById(canvasId);
-        var cleanCanvas = document.getElementById(cleanCanvasId);
+        var canvas = canvasElement;
+        var cleanCanvas = cleanCanvasElement;
         canvas.width = cleanCanvas.width = targetImg.naturalWidth;
         canvas.height = cleanCanvas.height = targetImg.naturalHeight;
         var canvasStyleWidth = getClosestWidthForContainer(targetImg);
@@ -18,7 +18,6 @@ export function uploadImage(fileInputId, canvasId, cleanCanvasId) {
 
         canvas.getContext("2d").drawImage(targetImg, 0, 0);
         cleanCanvas.getContext("2d").drawImage(targetImg, 0, 0);
-
     }
 }
 

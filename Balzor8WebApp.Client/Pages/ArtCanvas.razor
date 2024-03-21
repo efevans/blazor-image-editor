@@ -1,25 +1,24 @@
 ﻿@page "/canvas"
 @using System.Runtime.InteropServices.JavaScript
 @using MudBlazor.Utilities
+@inject IJSRuntime JS
 @rendermode InteractiveWebAssembly
 
-<MudFileUpload id="@FileInputId" Disabled="!AssemblyIsLoaded" T="IBrowserFile" FilesChanged="HandleFileUploaded" Accept="image/*" MaximumFileCount="1">
-    <ButtonTemplate>
-        <MudFab HtmlTag="label"
-                Color="Color.Primary"
-                StartIcon="@Icons.Material.Filled.Image"
-                Label="Upload Image"
-                for="@FileInputId" />
-    </ButtonTemplate>
-</MudFileUpload>
+<InputFile id="@FileInputId" @ref="InputFileRef" style="display: none;" OnChange="ShowPreview" />
+<MudFab HtmlTag="label"
+        Color="Color.Primary"
+        StartIcon="@Icons.Material.Filled.Image"
+        Label="Upload Image"
+        Disabled="!AssemblyIsLoaded"
+        for="@FileInputId" />
 @if (!AssemblyIsLoaded)
 {
     <div class="d-flex flex-row justify-center" style="min-height: 25rem;">
         <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
     </div>
 }
-else if (ImageIsUploaded)
-{
+
+<div style="@(ImageIsUploaded ? "" : "display: none;")">
     <div class="d-flex flex-row gap-2 my-2">
         <MudButton Color="Color.Secondary" Variant="Variant.Filled" OnClick="HandleReset">Reset</MudButton>
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleSave">Save</MudButton>
@@ -31,9 +30,9 @@ else if (ImageIsUploaded)
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleGammaCorrection">Gamma Correction</MudButton>
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandlePixelate">Pixelate</MudButton>
     </div>
-    <canvas id="@CleanCanvasId" style="display: none;"></canvas>
+    <canvas id="@CleanCanvasId" @ref="CleanCanvasRef" style="display: none;"></canvas>
     <MudStack Row="true" Style="margin-right: -20rem;" Class="flex-grow-1">
-        <canvas id="@MainCanvasId" class="flex-grow-0" style="border: 1px solid black;"></canvas>
+        <canvas id="@MainCanvasId" @ref="MainCanvasRef" class="flex-grow-0" style="border: 1px solid black;"></canvas>
         <MudSpacer />
         <MudDropContainer @ref="EffectsUIListRef" T="EffectItem" Items="Effects" ItemsSelector="@((item,dropzone) => true)" ItemDropped="ItemUpdated" Class="d-flex flex-wrap flex-grow-0 align-start" Style="width: 30rem;">
             <ChildContent>
@@ -49,13 +48,18 @@ else if (ImageIsUploaded)
             </ItemRenderer>
         </MudDropContainer>
     </MudStack>
-}
+</div>
+
 
 @code {
     private const string ClassName = "ArtCanvas";
     private const string MainCanvasId = "tutorial";
     private const string CleanCanvasId = "clean-canvas";
     private const string FileInputId = "mud-file-uploader";
+
+    private ElementReference MainCanvasRef { get; set; }
+    private ElementReference CleanCanvasRef { get; set; }
+    private InputFile? InputFileRef { get; set; }
 
     private bool AssemblyIsLoaded = false;
     private bool ImageIsUploaded = false;
@@ -108,34 +112,25 @@ else if (ImageIsUploaded)
         }
     }
 
-    private void HandleFileUploaded(IBrowserFile _)
+    private async Task ShowPreview()
     {
-        if (OperatingSystem.IsBrowser())
-        {
-            Log("File Uploaded");
-            ImageIsUploaded = true;
-            UploadImage(FileInputId, MainCanvasId, CleanCanvasId);
-        }
+        Log("File Uploaded");
+        ImageIsUploaded = true;
+        await JS.InvokeVoidAsync("previewImage", InputFileRef!.Element, MainCanvasRef, CleanCanvasRef);
     }
 
     private void HandleSave()
     {
-        if (OperatingSystem.IsBrowser())
-        {
-            Log("Save File");
-            SaveImage(MainCanvasId);
-        }
+        Log("Save File");
+        SaveImage(MainCanvasId);
     }
 
     private void HandleReset()
     {
-        if (OperatingSystem.IsBrowser())
-        {
-            Log("File Reset");
-            Effects.Clear();
-            ResetImage(MainCanvasId, CleanCanvasId);
-            EffectsUIListRef.Refresh();
-        }
+        Log("File Reset");
+        Effects.Clear();
+        ResetImage(MainCanvasId, CleanCanvasId);
+        EffectsUIListRef.Refresh();
     }
 
     private void ApplyEffect(Effect effect)
@@ -164,46 +159,31 @@ else if (ImageIsUploaded)
 
     private void HandleDither()
     {
-        if (OperatingSystem.IsBrowser())
-        {
-            Log("ApplyDither");
-            AddEffect(Effect.Dither);
-        }
+        Log("ApplyDither");
+        AddEffect(Effect.Dither);
     }
 
     private void HandleInvert()
     {
-        if (OperatingSystem.IsBrowser())
-        {
-            Log("ApplyInvert");
-            AddEffect(Effect.Invert);
-        }
+        Log("ApplyInvert");
+        AddEffect(Effect.Invert);
     }
 
     private void HandleHalfInvert()
     {
-        if (OperatingSystem.IsBrowser())
-        {
-            Log("ApplyHalfInvert");
-            AddEffect(Effect.HalfInvert);
-        }
+        Log("ApplyHalfInvert");
+        AddEffect(Effect.HalfInvert);
     }
 
     private void HandleGammaCorrection()
     {
-        if (OperatingSystem.IsBrowser())
-        {
-            Log("ApplyGammaCorrection");
-            AddEffect(Effect.GammaCorrect);
-        }
+        Log("ApplyGammaCorrection");
+        AddEffect(Effect.GammaCorrect);
     }
 
     private void HandlePixelate()
     {
-        if (OperatingSystem.IsBrowser())
-        {
-            Log("ApplyPixelate");
-            AddEffect(Effect.Pixelate);
-        }
+        Log("ApplyPixelate");
+        AddEffect(Effect.Pixelate);
     }
 }
