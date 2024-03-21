@@ -45,7 +45,7 @@ else if (ImageIsUploaded)
                 </MudPaper>
             </ChildContent>
             <ItemRenderer>
-                <MudListItem Text="@($"{context.Effect.ToString()} ({context.Order})")" />
+                <MudListItem Text="@context.Effect.ToString()" />
             </ItemRenderer>
         </MudDropContainer>
     </MudStack>
@@ -68,7 +68,6 @@ else if (ImageIsUploaded)
         Effects.Sort((e1, e2) => e1.Order > e2.Order ? 1 : -1);
         ResetImage(MainCanvasId, CleanCanvasId);
         ApplyEffects();
-        Log(String.Join(", ", Effects.Select(e => e.Effect.ToString() + ": " + e.Order)));
     }
 
     private List<EffectItem> Effects = new();
