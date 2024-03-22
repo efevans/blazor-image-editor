@@ -11,12 +11,14 @@
         Label="Upload Image"
         Disabled="!AssemblyIsLoaded"
         for="@FileInputId" />
+@* <div @ref="DropZoneRef" class="my-2" style="min-height: 300px; background-color: palegreen; @HoverStyle" @ondragenter="OnDragEnter" @ondragover="OnDragEnter" @ondragover:preventDefault="true" @ondragleave="OnDragLeave">
+</div> *@
 @if (!AssemblyIsLoaded)
 {
     <div class="d-flex flex-row justify-center" style="min-height: 25rem;">
         <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
     </div>
-}
+} 
 
 <div style="@(ImageIsUploaded ? "" : "display: none;")">
     <div class="d-flex flex-row gap-2 my-2">
@@ -24,11 +26,13 @@
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleSave">Save</MudButton>
     </div>
     <div class="d-flex flex-row gap-2 my-2">
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleDither">Dither</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleDither">Floyd-Steinberg Dither</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleOrderedDither">Ordered Dither</MudButton>
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleInvert">Invert</MudButton>
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleHalfInvert">Half Darken</MudButton>
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleGammaCorrection">Gamma Correction</MudButton>
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandlePixelate">Pixelate</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleOrderedDither">Ordered Dither</MudButton>
     </div>
     <canvas id="@CleanCanvasId" @ref="CleanCanvasRef" style="display: none;"></canvas>
     <MudStack Row="true" Style="margin-right: -20rem;" Class="flex-grow-1">
@@ -59,10 +63,16 @@
 
     private ElementReference MainCanvasRef { get; set; }
     private ElementReference CleanCanvasRef { get; set; }
+    private ElementReference DropZoneRef { get; set; }
     private InputFile? InputFileRef { get; set; }
 
     private bool AssemblyIsLoaded = false;
     private bool ImageIsUploaded = false;
+
+    private string HoverStyle = String.Empty;
+
+    private void OnDragEnter(DragEventArgs e) => HoverStyle = " border-style: solid; background-color: #00ca71;";
+    private void OnDragLeave(DragEventArgs e) => HoverStyle = String.Empty;
 
     private MudDropContainer<EffectItem> EffectsUIListRef { get; set; } = null!;
 
@@ -88,7 +98,8 @@
         Invert,
         HalfInvert,
         GammaCorrect,
-        Pixelate
+        Pixelate,
+        OrderedDither
     }
 
     private readonly Dictionary<Effect, Action<string>> EffectOperations = new()
@@ -98,6 +109,7 @@
         { Effect.HalfInvert, ArtCanvas.ApplyHalfInvert },
         { Effect.GammaCorrect, ArtCanvas.ApplyGammaCorrection },
         { Effect.Pixelate, ArtCanvas.ApplyPixelate },
+        { Effect.OrderedDither, ArtCanvas.ApplyOrderedDither },
     };
 
     protected override async Task OnInitializedAsync()
@@ -110,6 +122,23 @@
             Log("I'm logging from interop!");
             AssemblyIsLoaded = true;
         }
+    }
+
+    // protected override async Task OnAfterRenderAsync(bool firstRender)
+    // {
+    //     if (OperatingSystem.IsBrowser())
+    //     {
+    //         if (firstRender)
+    //         {
+    //             var _module = await JS.InvokeAsync<IJSObjectReference>("import", $"../Pages/{ClassName}.razor.js");
+    //             await _module.InvokeVoidAsync("initializeFileDropZone", DropZoneRef, InputFileRef!.Element);
+    //         }
+    //     }
+    // }
+
+    private async Task OnFileDropped(InputFileChangeEventArgs e)
+    {
+        await JS.InvokeVoidAsync("console.log", "file dropped");
     }
 
     private async Task ShowPreview()
@@ -185,5 +214,11 @@
     {
         Log("ApplyPixelate");
         AddEffect(Effect.Pixelate);
+    }
+
+    private void HandleOrderedDither()
+    {
+        Log("ApplyOrderedDither");
+        AddEffect(Effect.OrderedDither);
     }
 }

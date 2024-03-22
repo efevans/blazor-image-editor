@@ -31,5 +31,8 @@ namespace Balzor8WebApp.Client.Pages
 
         [JSImport("applyPixelate", "ArtCanvas")]
         internal static partial void ApplyPixelate(string canvasId);
+
+        [JSImport("applyOrderedDither", "ArtCanvas")]
+        internal static partial void ApplyOrderedDither(string canvasId);
     }
 }

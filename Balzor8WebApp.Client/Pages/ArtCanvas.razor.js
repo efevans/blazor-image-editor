@@ -2,6 +2,28 @@ export function consoleLog(msg) {
     console.log(msg);
 }
 
+// https://www.meziantou.net/upload-files-with-drag-drop-or-paste-from-clipboard-in-blazor.htm
+export function initializeFileDropZone (dropZoneElement, inputFile) {
+    // Handle the paste and drop events
+    function onDrop(e) {
+        e.preventDefault();
+        console.log("file dropped");
+
+        // Set the files property of the input element and raise the change event
+        inputFile.files = e.dataTransfer.files;
+        const event = new Event('change', { bubbles: true });
+        inputFile.dispatchEvent(event);
+    }
+    dropZoneElement.addEventListener("drop", onDrop);
+
+    // The returned object allows to unregister the events when the Blazor component is destroyed
+    //return {
+    //    dispose: () => {
+    //        dropZoneElement.removeEventListener("drop", onDrop);
+    //    }
+    //}
+}
+
 window.previewImage = (inputElement, canvasElement, cleanCanvasElement) => {
     const imgLink = URL.createObjectURL(inputElement.files[0]);
     const img = new Image();
@@ -144,6 +166,43 @@ export function applyPixelate(canvasId) {
         const parentY = coords[1] - (coords[1] % pixelationStrength);
         const parentIndex = getIndexForCoords([parentX, parentY], canvas);
         copyColorsToIndex(parentIndex, i, data);
+    }
+    ctx.putImageData(imageData, 0, 0);
+}
+
+export function applyOrderedDither(canvasId) {
+    var canvas = document.getElementById(canvasId);
+    var ctx = canvas.getContext("2d");
+    var width = canvas.width;
+    var height = canvas.height;
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const data = imageData.data;
+    let thresholdMatrix = [
+        [0, 32, 8, 40, 2, 34, 10, 42],
+        [48, 16, 56, 24, 50, 18, 58, 26],
+        [12, 44, 4, 36, 14, 46, 6, 38],
+        [60, 28, 52, 20, 62, 30, 54, 22],
+        [3, 35, 11, 43, 1, 33, 9, 41],
+        [51, 19, 59, 27, 49, 17, 57, 25],
+        [15, 47, 7, 39, 13, 45, 5, 37],
+        [63, 31, 55, 23, 61, 29, 53, 21]
+    ]
+    let normalizedThresholdMatrix = thresholdMatrix.map(row => row.map(value => value / 64));
+    for (let i = 0; i < data.length; i += 4) {
+        let normalizedValue = (data[i] + data[i + 1] + data[i + 2]) / 765.0;
+        let coords = getCoordsForIndex(i, canvas);
+        let xPosition = coords[0] % 8;
+        let yPosition = coords[1] % 8;
+        let thresholdValue = normalizedThresholdMatrix[yPosition][xPosition];
+        if (normalizedValue >= thresholdValue) {
+            data[i] = 255;
+            data[i + 1] = 255;
+            data[i + 2] = 255;
+        } else {
+            data[i] = 0;
+            data[i + 1] = 0;
+            data[i + 2] = 0;
+        }
     }
     ctx.putImageData(imageData, 0, 0);
 }
