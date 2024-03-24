@@ -11,8 +11,6 @@
         Label="Upload Image"
         Disabled="!AssemblyIsLoaded"
         for="@FileInputId" />
-@* <div @ref="DropZoneRef" class="my-2" style="min-height: 300px; background-color: palegreen; @HoverStyle" @ondragenter="OnDragEnter" @ondragover="OnDragEnter" @ondragover:preventDefault="true" @ondragleave="OnDragLeave">
-</div> *@
 @if (!AssemblyIsLoaded)
 {
     <div class="d-flex flex-row justify-center" style="min-height: 25rem;">
@@ -32,7 +30,6 @@
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleHalfInvert">Half Darken</MudButton>
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleGammaCorrection">Gamma Correction</MudButton>
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandlePixelate">Pixelate</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleOrderedDither">Ordered Dither</MudButton>
     </div>
     <canvas id="@CleanCanvasId" @ref="CleanCanvasRef" style="display: none;"></canvas>
     <MudStack Row="true" Style="margin-right: -20rem;" Class="flex-grow-1">
@@ -116,29 +113,12 @@
     {
         if (OperatingSystem.IsBrowser())
         {
-            await JSHost.ImportAsync(ClassName,
-                $"../Pages/{ClassName}.razor.js");
+            await JSHost.ImportAsync(this.GetType().Name,
+                $"../Pages/{this.GetType().Name}.razor.js");
 
             Log("I'm logging from interop!");
             AssemblyIsLoaded = true;
         }
-    }
-
-    // protected override async Task OnAfterRenderAsync(bool firstRender)
-    // {
-    //     if (OperatingSystem.IsBrowser())
-    //     {
-    //         if (firstRender)
-    //         {
-    //             var _module = await JS.InvokeAsync<IJSObjectReference>("import", $"../Pages/{ClassName}.razor.js");
-    //             await _module.InvokeVoidAsync("initializeFileDropZone", DropZoneRef, InputFileRef!.Element);
-    //         }
-    //     }
-    // }
-
-    private async Task OnFileDropped(InputFileChangeEventArgs e)
-    {
-        await JS.InvokeVoidAsync("console.log", "file dropped");
     }
 
     private async Task ShowPreview()
