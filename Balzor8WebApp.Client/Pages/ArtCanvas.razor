@@ -24,12 +24,12 @@
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleSave">Save</MudButton>
     </div>
     <div class="d-flex flex-row gap-2 my-2">
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleDither">Floyd-Steinberg Dither</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleOrderedDither">Ordered Dither</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleInvert">Invert</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleHalfInvert">Half Darken</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleGammaCorrection">Gamma Correction</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandlePixelate">Pixelate</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.FloydDither); }">Floyd-Steinberg Dither</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.OrderedDither); }">Ordered Dither</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.Invert); }">Invert</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.HalfInvert); }">Half Darken</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.GammaCorrect); }">Gamma Correction</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.Pixelate); }">Pixelate</MudButton>
     </div>
     <canvas id="@CleanCanvasId" @ref="CleanCanvasRef" style="display: none;"></canvas>
     <MudStack Row="true" Style="margin-right: -20rem;" Class="flex-grow-1">
@@ -91,7 +91,7 @@
 
     private enum Effect
     {
-        Dither,
+        FloydDither,
         Invert,
         HalfInvert,
         GammaCorrect,
@@ -101,7 +101,7 @@
 
     private readonly Dictionary<Effect, Action<string>> EffectOperations = new()
     {
-        { Effect.Dither, ArtCanvas.ApplyDither },
+        { Effect.FloydDither, ArtCanvas.ApplyDither },
         { Effect.Invert, ArtCanvas.ApplyInvert },
         { Effect.HalfInvert, ArtCanvas.ApplyHalfInvert },
         { Effect.GammaCorrect, ArtCanvas.ApplyGammaCorrection },
@@ -164,41 +164,5 @@
         {
             ApplyEffect(effect);
         }
-    }
-
-    private void HandleDither()
-    {
-        Log("ApplyDither");
-        AddEffect(Effect.Dither);
-    }
-
-    private void HandleInvert()
-    {
-        Log("ApplyInvert");
-        AddEffect(Effect.Invert);
-    }
-
-    private void HandleHalfInvert()
-    {
-        Log("ApplyHalfInvert");
-        AddEffect(Effect.HalfInvert);
-    }
-
-    private void HandleGammaCorrection()
-    {
-        Log("ApplyGammaCorrection");
-        AddEffect(Effect.GammaCorrect);
-    }
-
-    private void HandlePixelate()
-    {
-        Log("ApplyPixelate");
-        AddEffect(Effect.Pixelate);
-    }
-
-    private void HandleOrderedDither()
-    {
-        Log("ApplyOrderedDither");
-        AddEffect(Effect.OrderedDither);
     }
 }
