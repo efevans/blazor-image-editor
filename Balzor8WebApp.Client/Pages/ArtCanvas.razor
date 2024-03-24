@@ -27,7 +27,6 @@
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.FloydDither); }">Floyd-Steinberg Dither</MudButton>
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.OrderedDither); }">Ordered Dither</MudButton>
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.Invert); }">Invert</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.HalfInvert); }">Half Darken</MudButton>
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.GammaCorrect); }">Gamma Correction</MudButton>
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.Pixelate); }">Pixelate</MudButton>
     </div>
@@ -45,7 +44,7 @@
                 </MudPaper>
             </ChildContent>
             <ItemRenderer>
-                <MudListItem Text="@context.Effect.ToString()" />
+                <MudListItem Text="@context.Effect.Name" />
             </ItemRenderer>
         </MudDropContainer>
     </MudStack>
@@ -60,16 +59,10 @@
 
     private ElementReference MainCanvasRef { get; set; }
     private ElementReference CleanCanvasRef { get; set; }
-    private ElementReference DropZoneRef { get; set; }
     private InputFile? InputFileRef { get; set; }
 
     private bool AssemblyIsLoaded = false;
     private bool ImageIsUploaded = false;
-
-    private string HoverStyle = String.Empty;
-
-    private void OnDragEnter(DragEventArgs e) => HoverStyle = " border-style: solid; background-color: #00ca71;";
-    private void OnDragLeave(DragEventArgs e) => HoverStyle = String.Empty;
 
     private MudDropContainer<EffectItem> EffectsUIListRef { get; set; } = null!;
 
@@ -85,7 +78,7 @@
 
     private class EffectItem
     {
-        public Effect Effect { get; init; }
+        public ICanvasEffect Effect { get; init; } = null!;
         public int Order { get; set; }
     }
 
@@ -98,16 +91,6 @@
         Pixelate,
         OrderedDither
     }
-
-    private readonly Dictionary<Effect, Action<string>> EffectOperations = new()
-    {
-        { Effect.FloydDither, ArtCanvas.ApplyDither },
-        { Effect.Invert, ArtCanvas.ApplyInvert },
-        { Effect.HalfInvert, ArtCanvas.ApplyHalfInvert },
-        { Effect.GammaCorrect, ArtCanvas.ApplyGammaCorrection },
-        { Effect.Pixelate, ArtCanvas.ApplyPixelate },
-        { Effect.OrderedDither, ArtCanvas.ApplyOrderedDither },
-    };
 
     protected override async Task OnInitializedAsync()
     {
@@ -142,9 +125,9 @@
         EffectsUIListRef.Refresh();
     }
 
-    private void ApplyEffect(Effect effect)
+    private void ApplyEffect(ICanvasEffect effect)
     {
-        EffectOperations[effect](MainCanvasId);
+        effect.Apply(MainCanvasId);
     }
 
     private void ApplyEffects()
@@ -155,8 +138,9 @@
         }
     }
 
-    private void AddEffect(Effect effect, bool apply = true)
+    private void AddEffect(Effect effectType, bool apply = true)
     {
+        var effect = (new CanvasEffectBuilder()).Build(effectType);
         Effects.Add(new EffectItem { Effect = effect, Order = Effects.Count });
         EffectsUIListRef.Refresh();
 
@@ -164,5 +148,35 @@
         {
             ApplyEffect(effect);
         }
+    }
+
+    private class GenericCanvasEffect(string name, Action<string> applyAction) : ICanvasEffect
+    {
+        public string Name => name;
+        private Action<string> ApplyAction = applyAction;
+
+        public void Apply(string canvasId)
+        {
+            ApplyAction(canvasId);
+        }
+    }
+
+    private interface ICanvasEffect
+    {
+        public string Name { get; }
+        void Apply(string canvasId);
+    }
+
+    private class CanvasEffectBuilder
+    {
+        public ICanvasEffect Build(Effect effect) => effect switch
+        {
+            Effect.FloydDither => new GenericCanvasEffect("Floyd-Steinberg Dither", ApplyFloydSteinbergDither),
+            Effect.OrderedDither => new GenericCanvasEffect("Ordered Dither", ApplyOrderedDither),
+            Effect.Invert => new GenericCanvasEffect("Invert", ApplyInvert),
+            Effect.GammaCorrect => new GenericCanvasEffect("Gamma Correction", ApplyGammaCorrection),
+            Effect.Pixelate => new GenericCanvasEffect("Pixelate", ApplyPixelate),
+            _ => new GenericCanvasEffect("Unsupported", (str) => Log("unsupported effect")),
+        };
     }
 }

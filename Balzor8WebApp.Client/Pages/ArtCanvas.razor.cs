@@ -18,21 +18,18 @@ namespace Balzor8WebApp.Client.Pages
         internal static partial void ResetImage(string canvasId, string cleanCanvasId);
 
         [JSImport("applyDither", "ArtCanvas")]
-        internal static partial void ApplyDither(string canvasId);
-
-        [JSImport("applyInvert", "ArtCanvas")]
-        internal static partial void ApplyInvert(string canvasId);
-
-        [JSImport("applyHalfInvert", "ArtCanvas")]
-        internal static partial void ApplyHalfInvert(string canvasId);
-
-        [JSImport("applyGammaCorrection", "ArtCanvas")]
-        internal static partial void ApplyGammaCorrection(string canvasId);
-
-        [JSImport("applyPixelate", "ArtCanvas")]
-        internal static partial void ApplyPixelate(string canvasId);
+        public static partial void ApplyFloydSteinbergDither(string canvasId);
 
         [JSImport("applyOrderedDither", "ArtCanvas")]
-        internal static partial void ApplyOrderedDither(string canvasId);
+        public static partial void ApplyOrderedDither(string canvasId);
+
+        [JSImport("applyInvert", "ArtCanvas")]
+        public static partial void ApplyInvert(string canvasId);
+
+        [JSImport("applyGammaCorrection", "ArtCanvas")]
+        public static partial void ApplyGammaCorrection(string canvasId);
+
+        [JSImport("applyPixelate", "ArtCanvas")]
+        public static partial void ApplyPixelate(string canvasId);
     }
 }

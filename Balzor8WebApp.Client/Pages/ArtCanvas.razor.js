@@ -121,26 +121,6 @@ export function applyInvert(canvasId) {
     ctx.putImageData(imageData, 0, 0);
 }
 
-export function applyHalfInvert(canvasId) {
-    var canvas = document.getElementById(canvasId);
-    var ctx = canvas.getContext("2d");
-    var width = canvas.width;
-    var height = canvas.height;
-    const imageData = ctx.getImageData(0, 0, width, height);
-    const data = imageData.data;
-    for (let i = 0; i < data.length; i += 4) {
-        if (i >= width * height * 2) {
-            var coords = getCoordsForIndex(i, canvas);
-            var testedIndex = getIndexForCoords(coords, canvas);
-            break;
-        }
-        data[i] = 255 - data[i]; // red
-        data[i + 1] = 255 - data[i + 1]; // green
-        data[i + 2] = 255 - data[i + 2]; // blue
-    }
-    ctx.putImageData(imageData, 0, 0);
-}
-
 export function applyGammaCorrection(canvasId) {
     const canvas = document.getElementById(canvasId);
     const ctx = canvas.getContext("2d");
