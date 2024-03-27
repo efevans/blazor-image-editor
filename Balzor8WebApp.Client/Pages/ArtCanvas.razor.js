@@ -2,6 +2,13 @@ export function consoleLog(msg) {
     console.log(msg);
 }
 
+export function consoleLog2(serializedStr) {
+    let options = JSON.parse(serializedStr);
+    console.log(serializedStr);
+    console.log(options);
+    console.log(options.a);
+}
+
 // https://www.meziantou.net/upload-files-with-drag-drop-or-paste-from-clipboard-in-blazor.htm
 export function initializeFileDropZone (dropZoneElement, inputFile) {
     // Handle the paste and drop events

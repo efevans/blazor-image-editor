@@ -1,6 +1,8 @@
 ﻿@page "/canvas"
 @using System.Runtime.InteropServices.JavaScript
+@using Balzor8WebApp.Client.Components
 @using MudBlazor.Utilities
+@using System.Text.Json
 @inject IJSRuntime JS
 @rendermode InteractiveWebAssembly
 
@@ -16,7 +18,7 @@
     <div class="d-flex flex-row justify-center" style="min-height: 25rem;">
         <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
     </div>
-} 
+}
 
 <div style="@(ImageIsUploaded ? "" : "display: none;")">
     <div class="d-flex flex-row gap-2 my-2">
@@ -34,7 +36,7 @@
     <MudStack Row="true" Style="margin-right: -20rem;" Class="flex-grow-1">
         <canvas id="@MainCanvasId" @ref="MainCanvasRef" class="flex-grow-0" style="border: 1px solid black;"></canvas>
         <MudSpacer />
-        <MudDropContainer @ref="EffectsUIListRef" T="EffectItem" Items="Effects" ItemsSelector="@((item,dropzone) => true)" ItemDropped="ItemUpdated" Class="d-flex flex-wrap flex-grow-0 align-start" Style="width: 30rem;">
+        <MudDropContainer @ref="EffectsUIListRef" ItemIsDisabled="@((item) => !item.Draggable)" T="EffectItem" Items="Effects" ItemsSelector="@((item,dropzone) => true)" ItemDropped="ItemUpdated" Class="d-flex flex-wrap flex-grow-0 align-start" Style="width: 30rem;">
             <ChildContent>
                 <MudPaper Class="ml-4 flex-grow-1">
                     <MudList Clickable="true" Class="d-flex flex-column">
@@ -44,7 +46,7 @@
                 </MudPaper>
             </ChildContent>
             <ItemRenderer>
-                <MudListItem Text="@context.Effect.Name" />
+                <ArtCanvasEffectListItem EffectItem="@context" OnDragStateChangedCallback="OnEffectItemDragStateChanged"></ArtCanvasEffectListItem>
             </ItemRenderer>
         </MudDropContainer>
     </MudStack>
@@ -52,7 +54,6 @@
 
 
 @code {
-    private const string ClassName = "ArtCanvas";
     private const string MainCanvasId = "tutorial";
     private const string CleanCanvasId = "clean-canvas";
     private const string FileInputId = "mud-file-uploader";
@@ -68,18 +69,25 @@
 
     private void ItemUpdated(MudItemDropInfo<EffectItem> dropItem)
     {
+        Effects.ForEach(e => e.Draggable = false);
         Effects.UpdateOrder(dropItem, item => item.Order);
         Effects.Sort((e1, e2) => e1.Order > e2.Order ? 1 : -1);
         ResetImage(MainCanvasId, CleanCanvasId);
         ApplyEffects();
     }
 
+    private void OnEffectItemDragStateChanged()
+    {
+        EffectsUIListRef.Refresh();
+    }
+
     private List<EffectItem> Effects = new();
 
-    private class EffectItem
+    public class EffectItem
     {
         public ICanvasEffect Effect { get; init; } = null!;
         public int Order { get; set; }
+        public bool Draggable { get; set; } = false;
     }
 
     private enum Effect
@@ -107,7 +115,12 @@
     private async Task ShowPreview()
     {
         Log("File Uploaded");
+        var dict = new Dictionary<string, string>() { { "a", "b" }, { "c", "d" } };
+        var jsonDict = JsonSerializer.Serialize(dict);
+        Log2(jsonDict);
         ImageIsUploaded = true;
+        Effects.Clear();
+        EffectsUIListRef.Refresh();
         await JS.InvokeVoidAsync("previewImage", InputFileRef!.Element, MainCanvasRef, CleanCanvasRef);
     }
 
@@ -150,9 +163,14 @@
         }
     }
 
-    private class GenericCanvasEffect(string name, Action<string> applyAction) : ICanvasEffect
+    private class GenericCanvasEffect(string name,
+                                        Dictionary<string, string> defaultOptions,
+                                        Action<string> applyAction) : ICanvasEffect
     {
         public string Name => name;
+
+        public Dictionary<string, string> Options { get; set; } = defaultOptions ?? new Dictionary<string, string>();
+
         private Action<string> ApplyAction = applyAction;
 
         public void Apply(string canvasId)
@@ -161,9 +179,10 @@
         }
     }
 
-    private interface ICanvasEffect
+    public interface ICanvasEffect
     {
         public string Name { get; }
+        public Dictionary<string, string> Options { get; set; }
         void Apply(string canvasId);
     }
 
@@ -171,12 +190,18 @@
     {
         public ICanvasEffect Build(Effect effect) => effect switch
         {
-            Effect.FloydDither => new GenericCanvasEffect("Floyd-Steinberg Dither", ApplyFloydSteinbergDither),
-            Effect.OrderedDither => new GenericCanvasEffect("Ordered Dither", ApplyOrderedDither),
-            Effect.Invert => new GenericCanvasEffect("Invert", ApplyInvert),
-            Effect.GammaCorrect => new GenericCanvasEffect("Gamma Correction", ApplyGammaCorrection),
-            Effect.Pixelate => new GenericCanvasEffect("Pixelate", ApplyPixelate),
-            _ => new GenericCanvasEffect("Unsupported", (str) => Log("unsupported effect")),
+            Effect.FloydDither =>
+                new GenericCanvasEffect("Floyd-Steinberg Dither", new Dictionary<string, string>(), ApplyFloydSteinbergDither),
+            Effect.OrderedDither =>
+                new GenericCanvasEffect("Ordered Dither", new Dictionary<string, string>(), ApplyOrderedDither),
+            Effect.Invert =>
+                new GenericCanvasEffect("Invert", new Dictionary<string, string>(), ApplyInvert),
+            Effect.GammaCorrect =>
+                new GenericCanvasEffect("Gamma Correction", new Dictionary<string, string>() { { "slider", "" } }, ApplyGammaCorrection),
+            Effect.Pixelate =>
+                new GenericCanvasEffect("Pixelate", new Dictionary<string, string>() { { "strength", "" } }, ApplyPixelate),
+            _ =>
+                new GenericCanvasEffect("Unsupported", new Dictionary<string, string>(), (str) => Log("unsupported effect")),
         };
     }
 }

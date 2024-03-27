@@ -1,0 +1,39 @@
+﻿@using Balzor8WebApp.Client.Pages
+<MudPaper Class="d-flex align-center align-content-center px-4" Height="48px" Square="true" Elevation="0">
+    <MudText>@EffectItem.Effect.Name</MudText>
+    @if (EffectItem.Effect.Options.ContainsKey("slider"))
+    {
+        <MudSlider Value="@SliderValue" Min="2" Max="8" TickMarks="true" Step="1">Intensity</MudSlider>
+    }
+    @if (EffectItem.Effect.Options.TryGetValue("strength", out string? val))
+    {
+        <MudCheckBox @bind-Value="@BindValue"></MudCheckBox>
+    }
+    <MudSpacer />
+    <div @onmousedown="OnHandleMouseDown" @onmouseup="OnHandleMouseUp" style="min-width: 20px; height: 100%; background-color: red;"></div>
+</MudPaper>
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public ArtCanvas.EffectItem EffectItem { get; set; } = null!;
+
+    [Parameter]
+    [EditorRequired]
+    public Action OnDragStateChangedCallback { get; set; } = null!;
+
+    private bool BindValue { get; set; }
+    private int SliderValue { get; set; }
+
+    private void OnHandleMouseUp(MouseEventArgs _)
+    {
+        EffectItem.Draggable = false;
+        OnDragStateChangedCallback();
+    }
+
+    private void OnHandleMouseDown(MouseEventArgs _)
+    {
+        EffectItem.Draggable = true;
+        OnDragStateChangedCallback();
+    }
+}
