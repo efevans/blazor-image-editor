@@ -33,14 +33,15 @@
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.Pixelate); }">Pixelate</MudButton>
     </div>
     <canvas id="@CleanCanvasId" @ref="CleanCanvasRef" style="display: none;"></canvas>
-    <MudStack Row="true" Style="margin-right: -20rem;" Class="flex-grow-1">
+    <MudStack Row="true" Style="margin-right: -28rem;" Class="flex-grow-1">
         <canvas id="@MainCanvasId" @ref="MainCanvasRef" class="flex-grow-0" style="border: 1px solid black;"></canvas>
         <MudSpacer />
-        <MudDropContainer @ref="EffectsUIListRef" ItemIsDisabled="@((item) => !item.Draggable)" T="EffectItem" Items="Effects" ItemsSelector="@((item,dropzone) => true)" ItemDropped="ItemUpdated" Class="d-flex flex-wrap flex-grow-0 align-start" Style="width: 30rem;">
+        <MudDropContainer @ref="EffectsUIListRef" ItemIsDisabled="@((item) => !item.Draggable)" T="EffectItem" Items="Effects" ItemsSelector="@((item,dropzone) => true)" ItemDropped="ItemUpdated" Class="d-flex flex-wrap flex-grow-0 align-start" Style="width: 36rem;">
             <ChildContent>
                 <MudPaper Class="ml-4 flex-grow-1">
-                    <MudList Clickable="true" Class="d-flex flex-column">
+                    <MudList Class="d-flex flex-column">
                         <MudListSubheader>Effects</MudListSubheader>
+                        <MudDivider DividerType="DividerType.Middle" Light="true"></MudDivider>
                         <MudDropZone T="EffectItem" Identifier="1" Class="flex-grow-1" AllowReorder="true" />
                     </MudList>
                 </MudPaper>
@@ -153,7 +154,7 @@
 
     private void AddEffect(Effect effectType, bool apply = true)
     {
-        var effect = (new CanvasEffectBuilder()).Build(effectType);
+        var effect = (new CanvasEffectFactory()).CreateFor(effectType);
         Effects.Add(new EffectItem { Effect = effect, Order = Effects.Count });
         EffectsUIListRef.Refresh();
 
@@ -163,13 +164,11 @@
         }
     }
 
-    private class GenericCanvasEffect(string name,
-                                        Dictionary<string, string> defaultOptions,
-                                        Action<string> applyAction) : ICanvasEffect
+    private class GenericCanvasEffect(string name, Action<string> applyAction) : ICanvasEffect
     {
         public string Name => name;
 
-        public Dictionary<string, string> Options { get; set; } = defaultOptions ?? new Dictionary<string, string>();
+        public List<CanvasEffectOption> Options { get; } = new List<CanvasEffectOption>();
 
         private Action<string> ApplyAction = applyAction;
 
@@ -179,29 +178,60 @@
         }
     }
 
+    private class PixelateCanvasEffect : ICanvasEffect
+    {
+        public string Name => "Pixelate";
+
+        public List<CanvasEffectOption> Options { get; } = new List<CanvasEffectOption>()
+        {
+            new CanvasEffectOption("Strength", CanvasEffectOptionInputType.Slider, 2, 1, 5, 1),
+        };
+
+        public void Apply(string canvasId)
+        {
+            ApplyPixelate(canvasId);
+        }
+    }
+
     public interface ICanvasEffect
     {
         public string Name { get; }
-        public Dictionary<string, string> Options { get; set; }
+        public List<CanvasEffectOption> Options { get; }
         void Apply(string canvasId);
     }
 
-    private class CanvasEffectBuilder
+    private class CanvasEffectFactory
     {
-        public ICanvasEffect Build(Effect effect) => effect switch
+        public ICanvasEffect CreateFor(Effect effect) => effect switch
         {
             Effect.FloydDither =>
-                new GenericCanvasEffect("Floyd-Steinberg Dither", new Dictionary<string, string>(), ApplyFloydSteinbergDither),
+                new GenericCanvasEffect("FS-Dither", ApplyFloydSteinbergDither),
             Effect.OrderedDither =>
-                new GenericCanvasEffect("Ordered Dither", new Dictionary<string, string>(), ApplyOrderedDither),
+                new GenericCanvasEffect("O-Dither", ApplyOrderedDither),
             Effect.Invert =>
-                new GenericCanvasEffect("Invert", new Dictionary<string, string>(), ApplyInvert),
+                new GenericCanvasEffect("Invert", ApplyInvert),
             Effect.GammaCorrect =>
-                new GenericCanvasEffect("Gamma Correction", new Dictionary<string, string>() { { "slider", "" } }, ApplyGammaCorrection),
+                new GenericCanvasEffect("Gamma", ApplyGammaCorrection),
             Effect.Pixelate =>
-                new GenericCanvasEffect("Pixelate", new Dictionary<string, string>() { { "strength", "" } }, ApplyPixelate),
+                new PixelateCanvasEffect(),
             _ =>
-                new GenericCanvasEffect("Unsupported", new Dictionary<string, string>(), (str) => Log("unsupported effect")),
+                new GenericCanvasEffect("Unsupported", (str) => Log("unsupported effect")),
         };
+    }
+
+    public class CanvasEffectOption(string name, CanvasEffectOptionInputType inputType, int value,
+                                     int minValue, int maxValue, int step)
+    {
+        public string Name { get; } = name;
+        public CanvasEffectOptionInputType InputType { get; } = inputType;
+        public int Value { get; set; } = value;
+        public int MinValue { get; } = minValue;
+        public int MaxValue { get; } = maxValue;
+        public int Step { get; } = step;
+    }
+
+    public enum CanvasEffectOptionInputType
+    {
+        Slider,
     }
 }
