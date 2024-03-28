@@ -20,7 +20,7 @@ namespace Balzor8WebApp.Client.Pages
         [JSImport("resetImage", "ArtCanvas")]
         internal static partial void ResetImage(string canvasId, string cleanCanvasId);
 
-        //[JSImport("applyDither", "ArtCanvas")]
+        //[JSImport("applyFloydSteinbergDither", "ArtCanvas")]
         //public static partial void ApplyFloydSteinbergDither(string canvasId);
 
         //[JSImport("applyOrderedDither", "ArtCanvas")]

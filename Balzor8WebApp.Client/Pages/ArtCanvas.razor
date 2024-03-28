@@ -25,7 +25,7 @@
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleSave">Save</MudButton>
     </div>
     <div class="d-flex flex-row gap-2 my-2">
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.FloydDither); }">Floyd-Steinberg Dither</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.FloydSteinbergDither); }">Floyd-Steinberg Dither</MudButton>
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.OrderedDither); }">Ordered Dither</MudButton>
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.Invert); }">Invert</MudButton>
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.GammaCorrect); }">Gamma Correction</MudButton>
@@ -101,9 +101,8 @@
 
     private enum Effect
     {
-        FloydDither,
+        FloydSteinbergDither,
         Invert,
-        HalfInvert,
         GammaCorrect,
         Pixelate,
         OrderedDither
@@ -115,28 +114,12 @@
         {
             await JSHost.ImportAsync("ArtCanvas",
                     $"../Pages/ArtCanvas.razor.js");
-            JSModule = new(await JS.InvokeAsync<IJSObjectReference>("import", $"../Pages/{this.GetType().Name}.razor.js"));
+            JSModule = new(await JS.InvokeAsync<IJSObjectReference>("import", $"../Pages/ArtCanvas.razor.js"));
 
             Log("I'm logging from interop!");
             AssemblyIsLoaded = true;
         }
     }
-
-    // protected override async Task OnAfterRenderAsync(bool firstRender)
-    // {
-    //     if (firstRender)
-    //     {
-    //         if (OperatingSystem.IsBrowser())
-    //         {
-    //             await JSHost.ImportAsync(this.GetType().Name,
-    //                 $"../Pages/{this.GetType().Name}.razor.js");
-    //             JSModule = new(await JS.InvokeAsync<IJSObjectReference>("import", $"../Pages/{this.GetType().Name}.razor.js"));
-
-    //             Log("I'm logging from interop!");
-    //             AssemblyIsLoaded = true;
-    //         }
-    //     }
-    // }
 
     private async Task ShowPreview()
     {
@@ -163,6 +146,7 @@
 
     private void ApplyEffect(ICanvasEffect effect)
     {
+        Log("Applying Effect");
         effect.Apply(MainCanvasId);
     }
 
@@ -186,31 +170,17 @@
         }
     }
 
-    private class GenericCanvasEffect(string name) : ICanvasEffect
-    {
-        public string Name => name;
-
-        public List<CanvasEffectOption> Options { get; } = new List<CanvasEffectOption>();
-
-        public async Task Apply(string canvasId)
-        {
-            await Task.Run(Console.WriteLine);
-        }
-    }
-
-    private class PixelateCanvasEffect(IJSObjectReference jsModule) : ICanvasEffect
+    private class GenericCanvasEffect(IJSObjectReference jsModule, string name, List<CanvasEffectOption> options, string javascriptMethodName) : ICanvasEffect
     {
         private IJSObjectReference JSModule { get; } = jsModule;
-        public string Name => "Pixelate";
-
-        public List<CanvasEffectOption> Options { get; } = new List<CanvasEffectOption>()
-        {
-            new CanvasEffectOption("Strength", CanvasEffectOptionInputType.Slider, 2, 1, 5, 1),
-        };
+        public string Name => name;
+        public List<CanvasEffectOption> Options => options;
+        public string JavascriptFunctionName => javascriptMethodName;
 
         public async Task Apply(string canvasId)
         {
-            await JSModule.InvokeVoidAsync("applyPixelate", canvasId, JsonSerializer.Serialize(ArtCanvas.OptionsListToDictionary(Options)));
+            ArtCanvas.Log($"In Apply: {Name}, javascript func: {JavascriptFunctionName}");
+            await JSModule.InvokeVoidAsync(JavascriptFunctionName, canvasId, JsonSerializer.Serialize(ArtCanvas.OptionsListToDictionary(Options)));
         }
     }
 
@@ -218,26 +188,92 @@
     {
         public string Name { get; }
         public List<CanvasEffectOption> Options { get; }
+        public string JavascriptFunctionName { get; }
         Task Apply(string canvasId);
     }
 
     private class CanvasEffectFactory
     {
-        public ICanvasEffect CreateFor(Effect effect, IJSObjectReference jsModule) => effect switch
+        public ICanvasEffect CreateFor(Effect effect, IJSObjectReference jsModule)
         {
-            Effect.FloydDither =>
-                new GenericCanvasEffect("FS-Dither"),
-            Effect.OrderedDither =>
-                new GenericCanvasEffect("O-Dither"),
-            Effect.Invert =>
-                new GenericCanvasEffect("Invert"),
-            Effect.GammaCorrect =>
-                new GenericCanvasEffect("Gamma"),
-            Effect.Pixelate =>
-                new PixelateCanvasEffect(jsModule),
-            _ =>
-                new GenericCanvasEffect("Unsupported"),
-        };
+            CanvasEffectBuilder builder = new CanvasEffectBuilder(jsModule);
+
+            switch (effect)
+            {
+                case Effect.FloydSteinbergDither:
+                    return builder
+                        .WithName("FS-Dither")
+                        .WithJavascriptFunctionName("applyFloydSteinbergDither")
+                        .Build();
+
+                case Effect.OrderedDither:
+                    return builder
+                        .WithName("O-Dither")
+                        .WithJavascriptFunctionName("applyOrderedDither")
+                        .Build();
+
+                case Effect.Invert:
+                    return builder
+                        .WithName("Invert")
+                        .WithJavascriptFunctionName("applyInvert")
+                        .Build();
+
+                case Effect.GammaCorrect:
+                    return builder
+                        .WithName("Gamma")
+                        .WithJavascriptFunctionName("applyGammaCorrection")
+                        .Build();
+
+                case Effect.Pixelate:
+                    return builder
+                        .WithName("Pixelate")
+                        .WithJavascriptFunctionName("applyPixelate")
+                        .WithSliderOption("Strength", 2, 1, 5, 1)
+                        .Build();
+
+                default:
+                    return builder
+                        .WithName("FS-Dither")
+                        .WithJavascriptFunctionName("applyFloydSteinbergDither")
+                        .Build();
+            }
+        }
+    }
+
+    private class CanvasEffectBuilder(IJSObjectReference jsModule)
+    {
+        private IJSObjectReference JSModule { get; } = jsModule;
+        private string Name { get; set; } = String.Empty;
+        private List<CanvasEffectOption> Options { get; set; } = new List<CanvasEffectOption>();
+        private string JavascriptFunctionName { get; set; } = String.Empty;
+
+        public CanvasEffectBuilder WithName(string name)
+        {
+            Name = name;
+            return this;
+        }
+
+        public CanvasEffectBuilder WithJavascriptFunctionName(string javascriptFunctionName)
+        {
+            JavascriptFunctionName = javascriptFunctionName;
+            return this;
+        }
+
+        public CanvasEffectBuilder WithSliderOption(string name, int initialValue, int minValue, int maxValue, int step)
+        {
+            Options.Add(new CanvasEffectOption(name, CanvasEffectOptionInputType.Slider, initialValue, minValue, maxValue, step));
+            return this;
+        }
+
+        public ICanvasEffect Build()
+        {
+            var effect = new GenericCanvasEffect(JSModule, Name, Options, JavascriptFunctionName);
+            Name = String.Empty;
+            Options = new List<CanvasEffectOption>();
+            JavascriptFunctionName = String.Empty;
+
+            return effect;
+        }
     }
 
     public class CanvasEffectOption(string name, CanvasEffectOptionInputType inputType, int value,
