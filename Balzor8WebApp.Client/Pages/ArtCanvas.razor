@@ -1,8 +1,7 @@
 ﻿@page "/canvas"
-@using System.Runtime.InteropServices.JavaScript
-@using Balzor8WebApp.Client.Components
-@using MudBlazor.Utilities
 @using System.Text.Json
+@using System.Text.Json.Serialization
+@implements IAsyncDisposable
 @inject IJSRuntime JS
 @rendermode InteractiveWebAssembly
 
@@ -63,6 +62,8 @@
     private ElementReference CleanCanvasRef { get; set; }
     private InputFile? InputFileRef { get; set; }
 
+    private Lazy<IJSObjectReference> JSModule = new();
+
     private bool AssemblyIsLoaded = false;
     private bool ImageIsUploaded = false;
 
@@ -105,20 +106,34 @@
     {
         if (OperatingSystem.IsBrowser())
         {
-            await JSHost.ImportAsync(this.GetType().Name,
-                $"../Pages/{this.GetType().Name}.razor.js");
+            await JSHost.ImportAsync("ArtCanvas",
+                    $"../Pages/ArtCanvas.razor.js");
+            JSModule = new(await JS.InvokeAsync<IJSObjectReference>("import", $"../Pages/{this.GetType().Name}.razor.js"));
 
             Log("I'm logging from interop!");
             AssemblyIsLoaded = true;
         }
     }
 
+    // protected override async Task OnAfterRenderAsync(bool firstRender)
+    // {
+    //     if (firstRender)
+    //     {
+    //         if (OperatingSystem.IsBrowser())
+    //         {
+    //             await JSHost.ImportAsync(this.GetType().Name,
+    //                 $"../Pages/{this.GetType().Name}.razor.js");
+    //             JSModule = new(await JS.InvokeAsync<IJSObjectReference>("import", $"../Pages/{this.GetType().Name}.razor.js"));
+
+    //             Log("I'm logging from interop!");
+    //             AssemblyIsLoaded = true;
+    //         }
+    //     }
+    // }
+
     private async Task ShowPreview()
     {
         Log("File Uploaded");
-        var dict = new Dictionary<string, string>() { { "a", "b" }, { "c", "d" } };
-        var jsonDict = JsonSerializer.Serialize(dict);
-        Log2(jsonDict);
         ImageIsUploaded = true;
         Effects.Clear();
         EffectsUIListRef.Refresh();
@@ -154,7 +169,7 @@
 
     private void AddEffect(Effect effectType, bool apply = true)
     {
-        var effect = (new CanvasEffectFactory()).CreateFor(effectType);
+        var effect = (new CanvasEffectFactory()).CreateFor(effectType, JSModule.Value);
         Effects.Add(new EffectItem { Effect = effect, Order = Effects.Count });
         EffectsUIListRef.Refresh();
 
@@ -164,22 +179,21 @@
         }
     }
 
-    private class GenericCanvasEffect(string name, Action<string> applyAction) : ICanvasEffect
+    private class GenericCanvasEffect(string name) : ICanvasEffect
     {
         public string Name => name;
 
         public List<CanvasEffectOption> Options { get; } = new List<CanvasEffectOption>();
 
-        private Action<string> ApplyAction = applyAction;
-
-        public void Apply(string canvasId)
+        public async Task Apply(string canvasId)
         {
-            ApplyAction(canvasId);
+            await Task.Run(Console.WriteLine);
         }
     }
 
-    private class PixelateCanvasEffect : ICanvasEffect
+    private class PixelateCanvasEffect(IJSObjectReference jsModule) : ICanvasEffect
     {
+        private IJSObjectReference JSModule { get; } = jsModule;
         public string Name => "Pixelate";
 
         public List<CanvasEffectOption> Options { get; } = new List<CanvasEffectOption>()
@@ -187,9 +201,9 @@
             new CanvasEffectOption("Strength", CanvasEffectOptionInputType.Slider, 2, 1, 5, 1),
         };
 
-        public void Apply(string canvasId)
+        public async Task Apply(string canvasId)
         {
-            ApplyPixelate(canvasId);
+            await JSModule.InvokeVoidAsync("applyPixelate", canvasId, JsonSerializer.Serialize(ArtCanvas.OptionsListToDictionary(Options)));
         }
     }
 
@@ -197,25 +211,25 @@
     {
         public string Name { get; }
         public List<CanvasEffectOption> Options { get; }
-        void Apply(string canvasId);
+        Task Apply(string canvasId);
     }
 
     private class CanvasEffectFactory
     {
-        public ICanvasEffect CreateFor(Effect effect) => effect switch
+        public ICanvasEffect CreateFor(Effect effect, IJSObjectReference jsModule) => effect switch
         {
             Effect.FloydDither =>
-                new GenericCanvasEffect("FS-Dither", ApplyFloydSteinbergDither),
+                new GenericCanvasEffect("FS-Dither"),
             Effect.OrderedDither =>
-                new GenericCanvasEffect("O-Dither", ApplyOrderedDither),
+                new GenericCanvasEffect("O-Dither"),
             Effect.Invert =>
-                new GenericCanvasEffect("Invert", ApplyInvert),
+                new GenericCanvasEffect("Invert"),
             Effect.GammaCorrect =>
-                new GenericCanvasEffect("Gamma", ApplyGammaCorrection),
+                new GenericCanvasEffect("Gamma"),
             Effect.Pixelate =>
-                new PixelateCanvasEffect(),
+                new PixelateCanvasEffect(jsModule),
             _ =>
-                new GenericCanvasEffect("Unsupported", (str) => Log("unsupported effect")),
+                new GenericCanvasEffect("Unsupported"),
         };
     }
 
@@ -230,8 +244,19 @@
         public int Step { get; } = step;
     }
 
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum CanvasEffectOptionInputType
     {
         Slider,
+    }
+
+    private static Dictionary<string, CanvasEffectOption> OptionsListToDictionary(List<CanvasEffectOption> options) => options.ToDictionary(o => o.Name, o => o);
+
+    public async ValueTask DisposeAsync()
+    {
+        if (JSModule.IsValueCreated)
+        {
+            await JSModule.Value.DisposeAsync();
+        }
     }
 }

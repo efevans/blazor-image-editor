@@ -9,28 +9,6 @@ export function consoleLog2(serializedStr) {
     console.log(options.a);
 }
 
-// https://www.meziantou.net/upload-files-with-drag-drop-or-paste-from-clipboard-in-blazor.htm
-export function initializeFileDropZone (dropZoneElement, inputFile) {
-    // Handle the paste and drop events
-    function onDrop(e) {
-        e.preventDefault();
-        console.log("file dropped");
-
-        // Set the files property of the input element and raise the change event
-        inputFile.files = e.dataTransfer.files;
-        const event = new Event('change', { bubbles: true });
-        inputFile.dispatchEvent(event);
-    }
-    dropZoneElement.addEventListener("drop", onDrop);
-
-    // The returned object allows to unregister the events when the Blazor component is destroyed
-    //return {
-    //    dispose: () => {
-    //        dropZoneElement.removeEventListener("drop", onDrop);
-    //    }
-    //}
-}
-
 window.previewImage = (inputElement, canvasElement, cleanCanvasElement) => {
     const imgLink = URL.createObjectURL(inputElement.files[0]);
     const img = new Image();
@@ -67,7 +45,7 @@ export function resetImage(canvasId, cleanCanvasId) {
     ctx.drawImage(cleanCanvas, 0, 0);
 }
 
-export function applyDither(canvasId) {
+export function applyDither(canvasId, options) {
     var canvas = document.getElementById(canvasId);
     var ctx = canvas.getContext("2d");
     var width = canvas.width;
@@ -113,7 +91,7 @@ export function applyDither(canvasId) {
     ctx.putImageData(imageData, 0, 0);
 }
 
-export function applyInvert(canvasId) {
+export function applyInvert(canvasId, options) {
     var canvas = document.getElementById(canvasId);
     var ctx = canvas.getContext("2d");
     var width = canvas.width;
@@ -128,7 +106,7 @@ export function applyInvert(canvasId) {
     ctx.putImageData(imageData, 0, 0);
 }
 
-export function applyGammaCorrection(canvasId) {
+export function applyGammaCorrection(canvasId, options) {
     const canvas = document.getElementById(canvasId);
     const ctx = canvas.getContext("2d");
     const width = canvas.width;
@@ -139,13 +117,18 @@ export function applyGammaCorrection(canvasId) {
     ctx.putImageData(imageData, 0, 0);
 }
 
-export function applyPixelate(canvasId) {
+export function applyPixelate(canvasId, optionsStr) {
+    console.log(optionsStr);
+    const options = JSON.parse(optionsStr);
+    console.log(options);
     const canvas = document.getElementById(canvasId);
     const ctx = canvas.getContext("2d");
     const width = canvas.width;
     const height = canvas.height;
     const imageData = ctx.getImageData(0, 0, width, height);
     const data = imageData.data;
+    const strength = options.Strength.Value;
+    console.log(strength);
     const pixelationStrength = 2 ** 4;
     for (let i = 0; i < data.length; i += 4) {
         const coords = getCoordsForIndex(i, canvas);
@@ -157,7 +140,7 @@ export function applyPixelate(canvasId) {
     ctx.putImageData(imageData, 0, 0);
 }
 
-export function applyOrderedDither(canvasId) {
+export function applyOrderedDither(canvasId, options) {
     var canvas = document.getElementById(canvasId);
     var ctx = canvas.getContext("2d");
     var width = canvas.width;

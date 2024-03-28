@@ -3,10 +3,14 @@
     <MudText>@EffectItem.Effect.Name</MudText>
     @foreach (var option in EffectItem.Effect.Options)
     {
-        @(option.InputType switch
+        @if (option.InputType == ArtCanvas.CanvasEffectOptionInputType.Slider)
         {
-            ArtCanvas.CanvasEffectOptionInputType.Slider => (@<MudSlider @bind-Value="@option.Value" Style="width: 25%;" Min="@option.MinValue" Max="option.MaxValue" TickMarks="true" Step="1">@option.Name</MudSlider>)
-        })
+            <MudSlider @bind-Value="option.Value" Style="width: 25%;" Min="@option.MinValue" Max="@option.MaxValue" TickMarks="true" Step="1">@option.Name</MudSlider>
+        }
+        @* @(option.InputType switch
+        {
+            ArtCanvas.CanvasEffectOptionInputType.Slider => (@<MudSlider @bind-Value="@option.Value" Style="width: 25%;" Min="@option.MinValue" Max="@option.MaxValue" TickMarks="true" Step="1">@option.Name</MudSlider>)
+        }) *@
     }
     <MudSpacer />
     <MudIcon Size=Size.Small Icon="@Icons.Material.Filled.DragIndicator" Class="ml-4" @onmousedown="OnHandleMouseDown" @onmouseup="OnHandleMouseUp" Title="Drag" />
@@ -21,8 +25,10 @@
     [EditorRequired]
     public Action OnDragStateChangedCallback { get; set; } = null!;
 
-    private bool BindValue { get; set; }
-    private int SliderValue { get; set; }
+    private void OnValueChanged(ArtCanvas.CanvasEffectOption option, int newValue)
+    {
+        option.Value = newValue;
+    }
 
     private void OnHandleMouseUp(MouseEventArgs _)
     {
