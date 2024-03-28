@@ -118,18 +118,15 @@ export function applyGammaCorrection(canvasId, options) {
 }
 
 export function applyPixelate(canvasId, optionsStr) {
-    console.log(optionsStr);
-    const options = JSON.parse(optionsStr);
-    console.log(options);
     const canvas = document.getElementById(canvasId);
     const ctx = canvas.getContext("2d");
     const width = canvas.width;
     const height = canvas.height;
     const imageData = ctx.getImageData(0, 0, width, height);
     const data = imageData.data;
+    const options = JSON.parse(optionsStr);
     const strength = options.Strength.Value;
-    console.log(strength);
-    const pixelationStrength = 2 ** 4;
+    const pixelationStrength = 2 ** strength;
     for (let i = 0; i < data.length; i += 4) {
         const coords = getCoordsForIndex(i, canvas);
         const parentX = coords[0] - (coords[0] % pixelationStrength);

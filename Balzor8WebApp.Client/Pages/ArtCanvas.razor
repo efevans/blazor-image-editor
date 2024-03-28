@@ -46,7 +46,7 @@
                 </MudPaper>
             </ChildContent>
             <ItemRenderer>
-                <ArtCanvasEffectListItem EffectItem="@context" OnDragStateChangedCallback="OnEffectItemDragStateChanged"></ArtCanvasEffectListItem>
+                <ArtCanvasEffectListItem EffectItem="@context" OnValueChangedCallback="OnEffectOptionValueChangedCallback" OnDragStateChangedCallback="OnEffectItemDragStateChanged"></ArtCanvasEffectListItem>
             </ItemRenderer>
         </MudDropContainer>
     </MudStack>
@@ -74,6 +74,13 @@
         Effects.ForEach(e => e.Draggable = false);
         Effects.UpdateOrder(dropItem, item => item.Order);
         Effects.Sort((e1, e2) => e1.Order > e2.Order ? 1 : -1);
+        ResetImage(MainCanvasId, CleanCanvasId);
+        ApplyEffects();
+    }
+
+    private void OnEffectOptionValueChangedCallback()
+    {
+        Log("ValueChanged callback");
         ResetImage(MainCanvasId, CleanCanvasId);
         ApplyEffects();
     }

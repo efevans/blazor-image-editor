@@ -5,7 +5,7 @@
     {
         @if (option.InputType == ArtCanvas.CanvasEffectOptionInputType.Slider)
         {
-            <MudSlider @bind-Value="option.Value" Style="width: 25%;" Min="@option.MinValue" Max="@option.MaxValue" TickMarks="true" Step="1">@option.Name</MudSlider>
+            <MudSlider ValueChanged="(int val) => { OnValueChanged(option, val); }" Value="@option.Value" Style="width: 25%;" Min="@option.MinValue" Max="@option.MaxValue" TickMarks="true" Step="1">@option.Name</MudSlider>
         }
         @* @(option.InputType switch
         {
@@ -23,11 +23,16 @@
 
     [Parameter]
     [EditorRequired]
+    public Action OnValueChangedCallback { get; set; } = null!;
+
+    [Parameter]
+    [EditorRequired]
     public Action OnDragStateChangedCallback { get; set; } = null!;
 
     private void OnValueChanged(ArtCanvas.CanvasEffectOption option, int newValue)
     {
         option.Value = newValue;
+        OnValueChangedCallback();
     }
 
     private void OnHandleMouseUp(MouseEventArgs _)
