@@ -101,6 +101,7 @@ export function applyOrderedDither(canvasId, optionsStr) {
     let options = JSON.parse(optionsStr);
     let grayScale = options.Grayscale.BinaryValue;
     let strength = options.Strength.Value;
+    let colorDepth = options.Colors.Value;
     let _2Matrix = [
         [0, 2],
         [3, 1]
@@ -155,7 +156,8 @@ export function applyOrderedDither(canvasId, optionsStr) {
         length = 16;
         size = 256;
     }
-    let normalizedThresholdMatrix = selectedMatrix.map(row => row.map(value => value / size));
+    let normalizedThresholdMatrix = selectedMatrix.map(row => row.map(value => (value / size) - 0.5));
+    let colorStep = 255 / colorDepth | 0;
     for (let i = 0; i < data.length; i += 4) {
         let coords = getCoordsForIndex(i, canvas);
         let xPosition = coords[0] % length;
@@ -174,9 +176,9 @@ export function applyOrderedDither(canvasId, optionsStr) {
             }
         }
         else {
-            data[i] = getClosestValue(data[i], thresholdValue);
-            data[i + 1] = getClosestValue(data[i + 1], thresholdValue);
-            data[i + 2] = getClosestValue(data[i + 2], thresholdValue);
+            data[i] = getClosestValue2(data[i], thresholdValue, colorStep, colorDepth);
+            data[i + 1] = getClosestValue2(data[i + 1], thresholdValue, colorStep, colorDepth);
+            data[i + 2] = getClosestValue2(data[i + 2], thresholdValue, colorStep, colorDepth);
         }
     }
     ctx.putImageData(imageData, 0, 0);
@@ -187,6 +189,17 @@ function getClosestValue(val, thresholdValue) {
         return 255;
     }
     return 0;
+}
+
+function getClosestValue2(val, thresholdValue, colorStep, steps) {
+    var adjustedThresholdValue = thresholdValue / steps;
+    var normalizedRGB = (val / colorStep);
+    var addedThreshold = normalizedRGB + adjustedThresholdValue;
+    var roundedTotal = Math.round(addedThreshold);
+    var unnormalizedRGB = roundedTotal * colorStep;
+    var clampedRGB = Math.max(0, Math.min(255, unnormalizedRGB));
+    //var closest = Math.max(Math.round(((val / 255) + thresholdValue) * 2) * 128, 255);
+    return clampedRGB;
 }
 
 export function applyInvert(canvasId, optionsStr) {
