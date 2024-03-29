@@ -157,23 +157,15 @@ export function applyOrderedDither(canvasId, optionsStr) {
         size = 256;
     }
     let normalizedThresholdMatrix = selectedMatrix.map(row => row.map(value => (value / size) - 0.5));
-    let colorStep = 255 / colorDepth | 0;
+    let colorStep = 256 / colorDepth | 0;
     for (let i = 0; i < data.length; i += 4) {
         let coords = getCoordsForIndex(i, canvas);
         let xPosition = coords[0] % length;
         let yPosition = coords[1] % length;
         let thresholdValue = normalizedThresholdMatrix[yPosition][xPosition];
         if (grayScale) {
-            let normalizedValue = (data[i] + data[i + 1] + data[i + 2]) / 765.0;
-            if (normalizedValue >= thresholdValue) {
-                data[i] = 255;
-                data[i + 1] = 255;
-                data[i + 2] = 255;
-            } else {
-                data[i] = 0;
-                data[i + 1] = 0;
-                data[i + 2] = 0;
-            }
+            let normalizedValue = ((data[i] + data[i + 1] + data[i + 2]) / 3.0);
+            data[i + 0] = data[i + 1] = data[i + 2] = getClosestValue2(normalizedValue, thresholdValue, colorStep, colorDepth);
         }
         else {
             data[i] = getClosestValue2(data[i], thresholdValue, colorStep, colorDepth);
@@ -198,7 +190,6 @@ function getClosestValue2(val, thresholdValue, colorStep, steps) {
     var roundedTotal = Math.round(addedThreshold);
     var unnormalizedRGB = roundedTotal * colorStep;
     var clampedRGB = Math.max(0, Math.min(255, unnormalizedRGB));
-    //var closest = Math.max(Math.round(((val / 255) + thresholdValue) * 2) * 128, 255);
     return clampedRGB;
 }
 
