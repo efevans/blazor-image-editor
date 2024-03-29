@@ -211,6 +211,7 @@
                         .WithName("O-Dither")
                         .WithJavascriptFunctionName("applyOrderedDither")
                         .WithSliderOption("Strength", 2, 1, 4, 1)
+                        .WithCheckboxOption("Grayscale", false)
                         .Build();
 
                 case Effect.Invert:
@@ -266,6 +267,12 @@
             return this;
         }
 
+        public CanvasEffectBuilder WithCheckboxOption(string name, bool initialValue)
+        {
+            Options.Add(new CanvasEffectOption(name, CanvasEffectOptionInputType.Checkbox, initialValue));
+            return this;
+        }
+
         public ICanvasEffect Build()
         {
             var effect = new GenericCanvasEffect(JSModule, Name, Options, JavascriptFunctionName);
@@ -277,21 +284,40 @@
         }
     }
 
-    public class CanvasEffectOption(string name, CanvasEffectOptionInputType inputType, int value,
-                                     int minValue, int maxValue, int step)
+    public class CanvasEffectOption
     {
-        public string Name { get; } = name;
-        public CanvasEffectOptionInputType InputType { get; } = inputType;
-        public int Value { get; set; } = value;
-        public int MinValue { get; } = minValue;
-        public int MaxValue { get; } = maxValue;
-        public int Step { get; } = step;
+        public CanvasEffectOption(string name, CanvasEffectOptionInputType inputType, int value,
+                                     int minValue, int maxValue, int step)
+        {
+            Name = name;
+            InputType = inputType;
+            Value = value;
+            MinValue = minValue;
+            MaxValue = maxValue;
+            Step = step;
+        }
+
+        public CanvasEffectOption(string name, CanvasEffectOptionInputType inputType, bool initialValue)
+        {
+            Name = name;
+            InputType = inputType;
+            BinaryValue = initialValue;
+        }
+
+        public string Name { get; } = null!;
+        public CanvasEffectOptionInputType InputType { get; } = CanvasEffectOptionInputType.Slider;
+        public int Value { get; set; }
+        public int MinValue { get; }
+        public int MaxValue { get; }
+        public int Step { get; }
+        public bool BinaryValue { get; set; }
     }
 
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum CanvasEffectOptionInputType
     {
         Slider,
+        Checkbox
     }
 
     private static Dictionary<string, CanvasEffectOption> OptionsListToDictionary(List<CanvasEffectOption> options) => options.ToDictionary(o => o.Name, o => o);

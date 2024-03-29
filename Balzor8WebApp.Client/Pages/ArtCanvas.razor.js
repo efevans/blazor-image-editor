@@ -99,6 +99,7 @@ export function applyOrderedDither(canvasId, optionsStr) {
     const imageData = ctx.getImageData(0, 0, width, height);
     const data = imageData.data;
     let options = JSON.parse(optionsStr);
+    let grayScale = options.Grayscale.BinaryValue;
     let strength = options.Strength.Value;
     let _2Matrix = [
         [0, 2],
@@ -156,22 +157,36 @@ export function applyOrderedDither(canvasId, optionsStr) {
     }
     let normalizedThresholdMatrix = selectedMatrix.map(row => row.map(value => value / size));
     for (let i = 0; i < data.length; i += 4) {
-        let normalizedValue = (data[i] + data[i + 1] + data[i + 2]) / 765.0;
         let coords = getCoordsForIndex(i, canvas);
         let xPosition = coords[0] % length;
         let yPosition = coords[1] % length;
         let thresholdValue = normalizedThresholdMatrix[yPosition][xPosition];
-        if (normalizedValue >= thresholdValue) {
-            data[i] = 255;
-            data[i + 1] = 255;
-            data[i + 2] = 255;
-        } else {
-            data[i] = 0;
-            data[i + 1] = 0;
-            data[i + 2] = 0;
+        if (grayScale) {
+            let normalizedValue = (data[i] + data[i + 1] + data[i + 2]) / 765.0;
+            if (normalizedValue >= thresholdValue) {
+                data[i] = 255;
+                data[i + 1] = 255;
+                data[i + 2] = 255;
+            } else {
+                data[i] = 0;
+                data[i + 1] = 0;
+                data[i + 2] = 0;
+            }
+        }
+        else {
+            data[i] = getClosestValue(data[i], thresholdValue);
+            data[i + 1] = getClosestValue(data[i + 1], thresholdValue);
+            data[i + 2] = getClosestValue(data[i + 2], thresholdValue);
         }
     }
     ctx.putImageData(imageData, 0, 0);
+}
+
+function getClosestValue(val, thresholdValue) {
+    if ((val / 255) >= thresholdValue) {
+        return 255;
+    }
+    return 0;
 }
 
 export function applyInvert(canvasId, optionsStr) {
