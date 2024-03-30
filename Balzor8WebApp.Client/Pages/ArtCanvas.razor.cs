@@ -11,9 +11,6 @@ namespace Balzor8WebApp.Client.Pages
         [JSImport("consoleLog", "ArtCanvas")]
         internal static partial void Log(string msg);
 
-        [JSImport("consoleLog2", "ArtCanvas")]
-        internal static partial void Log2(string serializedStr);
-
         [JSImport("saveImage", "ArtCanvas")]
         internal static partial void SaveImage(string canvasId);
 

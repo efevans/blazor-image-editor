@@ -19,8 +19,11 @@
             <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleSave">Save</MudButton>
             <MudButton Color="Color.Secondary" Variant="Variant.Filled" OnClick="HandleReset">Reset</MudButton>
         </div>
+        @if (ShowStretchedImageAlert)
+        {
+            <MudAlert Severity="Severity.Warning" ShowCloseIcon="true" CloseIconClicked="RemoveStretchedImageUploadAlert">Image is large and may display artifacts from scaling</MudAlert>
+        }
     }
-
 </MudStack>
 @if (!AssemblyIsLoaded)
 {
@@ -76,6 +79,7 @@
 
     private bool AssemblyIsLoaded = false;
     private bool ImageIsUploaded = false;
+    private bool ShowStretchedImageAlert = false;
 
     private MudDropContainer<EffectItem> EffectsUIListRef { get; set; } = null!;
 
@@ -139,13 +143,27 @@
         }
     }
 
-    private async Task ShowPreview()
+    private async Task ShowPreview(InputFileChangeEventArgs e)
     {
         Log("File Uploaded");
+        var streamRef = new DotNetStreamReference(e.File.OpenReadStream(e.File.Size));
+        var json = await JSModule.Value.InvokeAsync<string>("getImageDimensions", streamRef);
+        var dimensions = JsonSerializer.Deserialize<ImageDimensions>(json)!;
+        if (dimensions.Width > 1150)
+        {
+            ShowStretchedImageAlert = true;
+        }
         ImageIsUploaded = true;
         Effects.Clear();
         EffectsUIListRef.Refresh();
         await JS.InvokeVoidAsync("previewImage", InputFileRef!.Element, MainCanvasRef, CleanCanvasRef);
+    }
+
+    record ImageDimensions(int Width, int Height);
+
+    private void RemoveStretchedImageUploadAlert()
+    {
+        ShowStretchedImageAlert = false;
     }
 
     private void HandleSave()
