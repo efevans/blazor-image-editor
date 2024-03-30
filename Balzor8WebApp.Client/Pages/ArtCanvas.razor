@@ -5,13 +5,23 @@
 @inject IJSRuntime JS
 @rendermode InteractiveWebAssembly
 
-<InputFile id="@FileInputId" @ref="InputFileRef" style="display: none;" OnChange="ShowPreview" />
-<MudFab HtmlTag="label"
-        Color="Color.Primary"
-        StartIcon="@Icons.Material.Filled.Image"
-        Label="Upload Image"
-        Disabled="!AssemblyIsLoaded"
-        for="@FileInputId" />
+<MudStack Row="true" AlignItems="AlignItems.Start" Justify="Justify.FlexStart">
+    <InputFile id="@FileInputId" @ref="InputFileRef" style="display: none;" OnChange="ShowPreview" />
+    <MudFab HtmlTag="label"
+            Color="Color.Primary"
+            StartIcon="@Icons.Material.Filled.Image"
+            Label="Upload Image"
+            Disabled="!AssemblyIsLoaded"
+            for="@FileInputId" />
+    @if (ImageIsUploaded)
+    {
+        <div class="d-flex flex-row gap-2 my-2">
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleSave">Save</MudButton>
+            <MudButton Color="Color.Secondary" Variant="Variant.Filled" OnClick="HandleReset">Reset</MudButton>
+        </div>
+    }
+
+</MudStack>
 @if (!AssemblyIsLoaded)
 {
     <div class="d-flex flex-row justify-center" style="min-height: 25rem;">
@@ -20,35 +30,35 @@
 }
 
 <div style="@(ImageIsUploaded ? "" : "display: none;")">
-    <div class="d-flex flex-row gap-2 my-2">
-        <MudButton Color="Color.Secondary" Variant="Variant.Filled" OnClick="HandleReset">Reset</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleSave">Save</MudButton>
-    </div>
-    <div class="d-flex flex-row gap-2 my-2">
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.FloydSteinbergDither); }">Floyd-Steinberg Dither</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.OrderedDither); }">Ordered Dither</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.Invert); }">Invert</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.GammaCorrect); }">Gamma Correction</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.Pixelate); }">Pixelate</MudButton>
-    </div>
     <canvas id="@CleanCanvasId" @ref="CleanCanvasRef" style="display: none;"></canvas>
-    <MudStack Row="true" Style="margin-right: -28rem;" Class="flex-grow-1">
-        <canvas id="@MainCanvasId" @ref="MainCanvasRef" class="flex-grow-0" style="border: 1px solid black;"></canvas>
+    <MudStack Row="true" Style="margin-right: -28rem; margin-left: -28rem;" Class="flex-grow-1 my-2">
+        <div class="d-flex flex-column align-end" style="width: 65%;">
+            <canvas id="@MainCanvasId" @ref="MainCanvasRef" class="flex-grow-0" style="border: 1px solid black;"></canvas>
+        </div>
         <MudSpacer />
-        <MudDropContainer @ref="EffectsUIListRef" ItemIsDisabled="@((item) => !item.Draggable)" T="EffectItem" Items="Effects" ItemsSelector="@((item,dropzone) => true)" ItemDropped="ItemUpdated" Class="d-flex flex-wrap flex-grow-0 align-start" Style="width: 36rem;">
-            <ChildContent>
-                <MudPaper Class="ml-4 flex-grow-1">
-                    <MudList Class="d-flex flex-column">
-                        <MudListSubheader>Effects</MudListSubheader>
-                        <MudDivider DividerType="DividerType.Middle" Light="true"></MudDivider>
-                        <MudDropZone T="EffectItem" Identifier="1" Class="flex-grow-1" AllowReorder="true" />
-                    </MudList>
-                </MudPaper>
-            </ChildContent>
-            <ItemRenderer>
-                <ArtCanvasEffectListItem EffectItem="@context" OnValueChangedCallback="OnEffectOptionValueChangedCallback" OnDragStateChangedCallback="OnEffectItemDragStateChanged"></ArtCanvasEffectListItem>
-            </ItemRenderer>
-        </MudDropContainer>
+        <MudStack AlignItems="AlignItems.Start" Justify="Justify.FlexStart" Style="width:30%;">
+            <MudStack Row="true" Spacing="2" Class="flex-wrap">
+                <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.FloydSteinbergDither); }">Floyd-Steinberg Dither</MudButton>
+                <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.OrderedDither); }">Ordered Dither</MudButton>
+                <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.Invert); }">Invert</MudButton>
+                <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.GammaCorrect); }">Gamma Correction</MudButton>
+                <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.Pixelate); }">Pixelate</MudButton>
+            </MudStack>
+            <MudDropContainer @ref="EffectsUIListRef" ItemIsDisabled="@((item) => !item.Draggable)" T="EffectItem" Items="Effects" ItemsSelector="@((item,dropzone) => true)" ItemDropped="ItemUpdated" Class="d-flex flex-wrap flex-grow-0 align-start" Style="width: 100%;">
+                <ChildContent>
+                    <MudPaper Class="flex-grow-1">
+                        <MudList Class="d-flex flex-column">
+                            <MudListSubheader>Effects</MudListSubheader>
+                            <MudDivider DividerType="DividerType.Middle" Light="true"></MudDivider>
+                            <MudDropZone T="EffectItem" Identifier="1" Class="flex-grow-1" AllowReorder="true" />
+                        </MudList>
+                    </MudPaper>
+                </ChildContent>
+                <ItemRenderer>
+                    <ArtCanvasEffectListItem EffectItem="@context" OnValueChangedCallback="OnEffectOptionValueChangedCallback" OnDragStateChangedCallback="OnEffectItemDragStateChanged"></ArtCanvasEffectListItem>
+                </ItemRenderer>
+            </MudDropContainer>
+        </MudStack>
     </MudStack>
 </div>
 
@@ -146,6 +156,10 @@
 
     private void ApplyEffect(ICanvasEffect effect)
     {
+        if (!effect.Enabled)
+        {
+            return;
+        }
         Log("Applying Effect");
         effect.Apply(MainCanvasId);
     }
@@ -174,6 +188,7 @@
     {
         private IJSObjectReference JSModule { get; } = jsModule;
         public string Name => name;
+        public bool Enabled { get; set; } = true;
         public List<CanvasEffectOption> Options => options;
         public string JavascriptFunctionName => javascriptMethodName;
 
@@ -187,6 +202,7 @@
     public interface ICanvasEffect
     {
         public string Name { get; }
+        public bool Enabled { get; set; }
         public List<CanvasEffectOption> Options { get; }
         public string JavascriptFunctionName { get; }
         Task Apply(string canvasId);

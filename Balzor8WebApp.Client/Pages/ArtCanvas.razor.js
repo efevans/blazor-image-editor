@@ -252,7 +252,7 @@ function gammaCorrectData(data) {
 }
 
 function getClosestWidthForContainer(img) {
-    var containerWidth = 900;
+    var containerWidth = 1150;
 
     var currentTestWidth = img.naturalWidth;
     while (true) {

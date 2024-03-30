@@ -1,19 +1,24 @@
 ﻿@using Balzor8WebApp.Client.Pages
-<MudPaper Class="d-flex align-center align-content-center pl-4 pr-2 gap-4" Height="48px" Square="true" Elevation="0">
+<MudPaper Class="d-flex align-start pl-4 pr-2 pt-2 gap-4" MinHeight="48px" Square="true" Elevation="0">
     <MudText>@EffectItem.Effect.Name</MudText>
-    @foreach (var option in EffectItem.Effect.Options)
-    {
-        @if (option.InputType == ArtCanvas.CanvasEffectOptionInputType.Slider)
+    <MudStack AlignItems="AlignItems.Start" Justify="Justify.FlexStart" Style="width: 40%;">
+        @foreach (var option in EffectItem.Effect.Options)
         {
-            <MudSlider ValueChanged="(int val) => { OnValueChanged(option, val); }" Value="@option.Value" Style="width: 25%;" Min="@option.MinValue" Max="@option.MaxValue" TickMarks="true" Step="1" ValueLabel="true">@option.Name.ToLower()</MudSlider>
+            <div class="border-separated-list">
+                @if (option.InputType == ArtCanvas.CanvasEffectOptionInputType.Slider)
+                {
+                    <MudSlider ValueChanged="(int val) => { OnValueChanged(option, val); }" Value="@option.Value" Min="@option.MinValue" Max="@option.MaxValue" TickMarks="true" Step="1" ValueLabel="true">@option.Name.ToLower()</MudSlider>
+                }
+                else if (option.InputType == ArtCanvas.CanvasEffectOptionInputType.Checkbox)
+                {
+                    <MudCheckBox ValueChanged="(bool val) => { OnValueChanged(option, val); }" Value="@option.BinaryValue" Label="@option.Name.ToLower()" LabelPosition="LabelPosition.Start" Color="Color.Primary"></MudCheckBox>
+                }
+            </div>
         }
-        else if (option.InputType == ArtCanvas.CanvasEffectOptionInputType.Checkbox)
-        {
-            <MudCheckBox ValueChanged="(bool val) => { OnValueChanged(option, val); }" Value="@option.BinaryValue" Label="@option.Name.ToLower()" LabelPosition="LabelPosition.Start" Color="Color.Primary"></MudCheckBox>
-        }
-    }
+    </MudStack>
     <MudSpacer />
-    <MudIcon Size=Size.Small Icon="@Icons.Material.Filled.DragIndicator" Class="ml-4" @onmousedown="OnHandleMouseDown" @onmouseup="OnHandleMouseUp" Title="Drag" />
+    <MudCheckBox ValueChanged="(bool val) => { OnEnableToggled(val); }" Value="EffectItem.Effect.Enabled" Color="Color.Secondary"></MudCheckBox>
+    <MudIcon Size=Size.Small Icon="@Icons.Material.Filled.DragIndicator" Class="ml-2" @onmousedown="OnHandleMouseDown" @onmouseup="OnHandleMouseUp" Title="Drag" />
 </MudPaper>
 
 @code {
@@ -28,6 +33,14 @@
     [Parameter]
     [EditorRequired]
     public Action OnDragStateChangedCallback { get; set; } = null!;
+
+    private bool Enabled { get; set; } = true;
+
+    private void OnEnableToggled(bool newValue)
+    {
+        EffectItem.Effect.Enabled = newValue;
+        OnValueChangedCallback();
+    }
 
     private void OnValueChanged(ArtCanvas.CanvasEffectOption option, int newValue)
     {
