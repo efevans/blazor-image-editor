@@ -1,21 +1,5 @@
 ﻿@inherits LayoutComponentBase
 
-@* <div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
-
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
-
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div> *@
-
 <MudThemeProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
@@ -33,7 +17,6 @@
     </MudAppBar>
     <MudMainContent>
         <MudContainer Class="py-4" MaxWidth="MaxWidth.Medium">
-            @* <MudPaper Elevation="2" Style="margin: 0 -5rem 0 -5rem;" Class="px-5" MinHeight="100%"> *@
                 @Body
         </MudContainer>
     </MudMainContent>

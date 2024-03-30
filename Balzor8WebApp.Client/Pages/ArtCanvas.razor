@@ -32,7 +32,7 @@
 <div style="@(ImageIsUploaded ? "" : "display: none;")">
     <canvas id="@CleanCanvasId" @ref="CleanCanvasRef" style="display: none;"></canvas>
     <MudStack Row="true" Style="margin-right: -28rem; margin-left: -28rem;" Class="flex-grow-1 my-2">
-        <div class="d-flex flex-column align-end" style="width: 65%;">
+        <div class="d-flex flex-column align-center" style="width: 65%;">
             <canvas id="@MainCanvasId" @ref="MainCanvasRef" class="flex-grow-0" style="border: 1px solid black;"></canvas>
         </div>
         <MudSpacer />
@@ -55,7 +55,7 @@
                     </MudPaper>
                 </ChildContent>
                 <ItemRenderer>
-                    <ArtCanvasEffectListItem EffectItem="@context" OnValueChangedCallback="OnEffectOptionValueChangedCallback" OnDragStateChangedCallback="OnEffectItemDragStateChanged"></ArtCanvasEffectListItem>
+                    <ArtCanvasEffectListItem EffectItem="@context" OnValueChangedCallback="OnEffectOptionValueChangedCallback" OnDragStateChangedCallback="OnEffectItemDragStateChanged" OnDeleteCallback="OnEffectDeleteCallback"></ArtCanvasEffectListItem>
                 </ItemRenderer>
             </MudDropContainer>
         </MudStack>
@@ -98,6 +98,14 @@
     private void OnEffectItemDragStateChanged()
     {
         EffectsUIListRef.Refresh();
+    }
+
+    private void OnEffectDeleteCallback(EffectItem item)
+    {
+        Effects.Remove(item);
+        EffectsUIListRef.Refresh();
+        ResetImage(MainCanvasId, CleanCanvasId);
+        ApplyEffects();
     }
 
     private List<EffectItem> Effects = new();
