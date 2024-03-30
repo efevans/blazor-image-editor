@@ -234,9 +234,9 @@
                     return builder
                         .WithName("O-Dither")
                         .WithJavascriptFunctionName("applyOrderedDither")
-                        .WithSliderOption("Strength", 2, 1, 4, 1)
-                        .WithSliderOption("Colors", 1, 1, 8, 1)
-                        .WithCheckboxOption("Grayscale", false)
+                        .WithSliderOption("Strength", "strength", 2, 0, 4, 1)
+                        .WithSliderOption("Color Bits", "colorBits", 1, 1, 8, 1)
+                        .WithCheckboxOption("Grayscale", "grayscale", false)
                         .Build();
 
                 case Effect.Invert:
@@ -255,7 +255,7 @@
                     return builder
                         .WithName("Pixelate")
                         .WithJavascriptFunctionName("applyPixelate")
-                        .WithSliderOption("Strength", 2, 1, 5, 1)
+                        .WithSliderOption("Strength", "strength", 2, 1, 5, 1)
                         .Build();
 
                 default:
@@ -286,15 +286,15 @@
             return this;
         }
 
-        public CanvasEffectBuilder WithSliderOption(string name, int initialValue, int minValue, int maxValue, int step)
+        public CanvasEffectBuilder WithSliderOption(string name, string key, int initialValue, int minValue, int maxValue, int step)
         {
-            Options.Add(new CanvasEffectOption(name, CanvasEffectOptionInputType.Slider, initialValue, minValue, maxValue, step));
+            Options.Add(new CanvasEffectOption(name, key, CanvasEffectOptionInputType.Slider, initialValue, minValue, maxValue, step));
             return this;
         }
 
-        public CanvasEffectBuilder WithCheckboxOption(string name, bool initialValue)
+        public CanvasEffectBuilder WithCheckboxOption(string name, string key, bool initialValue)
         {
-            Options.Add(new CanvasEffectOption(name, CanvasEffectOptionInputType.Checkbox, initialValue));
+            Options.Add(new CanvasEffectOption(name, key, CanvasEffectOptionInputType.Checkbox, initialValue));
             return this;
         }
 
@@ -311,10 +311,11 @@
 
     public class CanvasEffectOption
     {
-        public CanvasEffectOption(string name, CanvasEffectOptionInputType inputType, int value,
+        public CanvasEffectOption(string name, string key, CanvasEffectOptionInputType inputType, int value,
                                      int minValue, int maxValue, int step)
         {
             Name = name;
+            Key = key;
             InputType = inputType;
             Value = value;
             MinValue = minValue;
@@ -322,14 +323,16 @@
             Step = step;
         }
 
-        public CanvasEffectOption(string name, CanvasEffectOptionInputType inputType, bool initialValue)
+        public CanvasEffectOption(string name, string key, CanvasEffectOptionInputType inputType, bool initialValue)
         {
             Name = name;
+            Key = key;
             InputType = inputType;
             BinaryValue = initialValue;
         }
 
         public string Name { get; } = null!;
+        public string Key { get; } = null!;
         public CanvasEffectOptionInputType InputType { get; } = CanvasEffectOptionInputType.Slider;
         public int Value { get; set; }
         public int MinValue { get; }
@@ -345,7 +348,7 @@
         Checkbox
     }
 
-    private static Dictionary<string, CanvasEffectOption> OptionsListToDictionary(List<CanvasEffectOption> options) => options.ToDictionary(o => o.Name, o => o);
+    private static Dictionary<string, CanvasEffectOption> OptionsListToDictionary(List<CanvasEffectOption> options) => options.ToDictionary(o => o.Key, o => o);
 
     public async ValueTask DisposeAsync()
     {

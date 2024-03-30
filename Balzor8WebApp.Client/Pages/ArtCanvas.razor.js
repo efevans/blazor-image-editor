@@ -99,9 +99,9 @@ export function applyOrderedDither(canvasId, optionsStr) {
     const imageData = ctx.getImageData(0, 0, width, height);
     const data = imageData.data;
     let options = JSON.parse(optionsStr);
-    let grayScale = options.Grayscale.BinaryValue;
-    let strength = options.Strength.Value;
-    let colorDepth = options.Colors.Value;
+    let grayscale = options.grayscale.BinaryValue;
+    let strength = options.strength.Value;
+    let colorBits = options.colorBits.Value;
     let _2Matrix = [
         [0, 2],
         [3, 1]
@@ -157,33 +157,46 @@ export function applyOrderedDither(canvasId, optionsStr) {
         size = 256;
     }
     let normalizedThresholdMatrix = selectedMatrix.map(row => row.map(value => (value / size) - 0.5));
-    let colorStep = 256 / colorDepth | 0;
-    for (let i = 0; i < data.length; i += 4) {
-        let coords = getCoordsForIndex(i, canvas);
-        let xPosition = coords[0] % length;
-        let yPosition = coords[1] % length;
-        let thresholdValue = normalizedThresholdMatrix[yPosition][xPosition];
-        if (grayScale) {
-            let normalizedValue = ((data[i] + data[i + 1] + data[i + 2]) / 3.0);
-            data[i + 0] = data[i + 1] = data[i + 2] = getClosestValue2(normalizedValue, thresholdValue, colorStep, colorDepth);
+    let colorStep = 256 / colorBits | 0;
+    if (strength == 0) {
+        for (let i = 0; i < data.length; i += 4) {
+            if (grayscale) {
+                let normalizedValue = ((data[i] + data[i + 1] + data[i + 2]) / 3.0);
+                data[i + 0] = data[i + 1] = data[i + 2] = getClosetValueNoDither(normalizedValue, colorStep);
+            } else {
+                data[i] = getClosetValueNoDither(data[i], colorStep);
+                data[i + 1] = getClosetValueNoDither(data[i + 1], colorStep);
+                data[i + 2] = getClosetValueNoDither(data[i + 2], colorStep);
+            }
         }
-        else {
-            data[i] = getClosestValue2(data[i], thresholdValue, colorStep, colorDepth);
-            data[i + 1] = getClosestValue2(data[i + 1], thresholdValue, colorStep, colorDepth);
-            data[i + 2] = getClosestValue2(data[i + 2], thresholdValue, colorStep, colorDepth);
+    } else {
+        for (let i = 0; i < data.length; i += 4) {
+            let coords = getCoordsForIndex(i, canvas);
+            let xPosition = coords[0] % length;
+            let yPosition = coords[1] % length;
+            let thresholdValue = normalizedThresholdMatrix[yPosition][xPosition];
+            if (grayscale) {
+                let normalizedValue = ((data[i] + data[i + 1] + data[i + 2]) / 3.0);
+                data[i + 0] = data[i + 1] = data[i + 2] = getClosestValue(normalizedValue, thresholdValue, colorStep, colorBits);
+            } else {
+                data[i] = getClosestValue(data[i], thresholdValue, colorStep, colorBits);
+                data[i + 1] = getClosestValue(data[i + 1], thresholdValue, colorStep, colorBits);
+                data[i + 2] = getClosestValue(data[i + 2], thresholdValue, colorStep, colorBits);
+            }
         }
     }
     ctx.putImageData(imageData, 0, 0);
 }
 
-function getClosestValue(val, thresholdValue) {
-    if ((val / 255) >= thresholdValue) {
-        return 255;
-    }
-    return 0;
+function getClosetValueNoDither(val, colorStep) {
+    var normalizedRGB = (val / colorStep);
+    var roundedTotal = Math.round(normalizedRGB);
+    var unnormalizedRGB = roundedTotal * colorStep;
+    var clampedRGB = Math.max(0, Math.min(255, unnormalizedRGB));
+    return clampedRGB;
 }
 
-function getClosestValue2(val, thresholdValue, colorStep, steps) {
+function getClosestValue(val, thresholdValue, colorStep, steps) {
     var adjustedThresholdValue = thresholdValue / steps;
     var normalizedRGB = (val / colorStep);
     var addedThreshold = normalizedRGB + adjustedThresholdValue;
@@ -227,7 +240,7 @@ export function applyPixelate(canvasId, optionsStr) {
     const imageData = ctx.getImageData(0, 0, width, height);
     const data = imageData.data;
     const options = JSON.parse(optionsStr);
-    const strength = options.Strength.Value;
+    const strength = options.strength.Value;
     const pixelationStrength = 2 ** strength;
     for (let i = 0; i < data.length; i += 4) {
         const coords = getCoordsForIndex(i, canvas);
