@@ -1,5 +1,5 @@
 ﻿@using Balzor8WebApp.Client.Pages
-<MudPaper Class="d-flex align-start pl-4 pr-2 pt-2 gap-4" MinHeight="48px" Square="true" Elevation="0">
+<MudPaper Class="d-flex align-start pl-4 pr-2 pt-4 gap-4 cursor-default" MinHeight="48px" Square="true" Elevation="0">
     <MudText>@EffectItem.Effect.Name</MudText>
     <MudStack AlignItems="AlignItems.Start" Justify="Justify.FlexStart" Style="width: 40%;">
         @foreach (var option in EffectItem.Effect.Options)
@@ -18,7 +18,7 @@
     </MudStack>
     <MudSpacer />
     <MudCheckBox ValueChanged="(bool val) => { OnEnableToggled(val); }" Value="EffectItem.Effect.Enabled" Color="Color.Secondary"></MudCheckBox>
-    <MudIcon Size=Size.Small Icon="@Icons.Material.Filled.DragIndicator" Class="ml-2" @onmousedown="OnHandleMouseDown" @onmouseup="OnHandleMouseUp" Title="Drag" />
+    <MudIcon Size=Size.Small Icon="@Icons.Material.Filled.DragIndicator" Class="ml-2 cursor-grab" @onmousedown="OnHandleMouseDown" @onmouseup="OnHandleMouseUp" Title="Drag" />
 </MudPaper>
 
 @code {
