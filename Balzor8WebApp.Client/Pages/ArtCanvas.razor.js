@@ -204,7 +204,7 @@ function getClosetValueNoDither(val, colorStep) {
 
 function getClosestValue(val, thresholdValue, colorStep, steps) {
     var adjustedThresholdValue = thresholdValue / steps;
-    var normalizedRGB = (val / colorStep);
+    var normalizedRGB = ((val + 1)/ colorStep);
     var addedThreshold = normalizedRGB + adjustedThresholdValue;
     var roundedTotal = Math.round(addedThreshold);
     var unnormalizedRGB = roundedTotal * colorStep;
