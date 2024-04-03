@@ -129,22 +129,22 @@ export function applyOrderedDither(canvasId, optionsStr) {
         [63, 31, 55, 23, 61, 29, 53, 21]
     ]
     let _16Matrix = [
-        [ 0, 191, 48, 239, 12, 203, 60, 251, 3, 194, 51, 242, 15, 206, 63, 254 ],
-        [ 127, 64, 175, 112, 139, 76, 187, 124, 130, 67, 178, 115, 142, 79, 190, 127 ],
-        [ 32, 223, 16, 207, 44, 235, 28, 219, 35, 226, 19, 210, 47, 238, 31, 222 ],
-        [ 159, 96, 143, 80, 171, 108, 155, 92, 162, 99, 146, 83, 174, 111, 158, 95 ],
-        [ 8, 199, 56, 247, 4, 195, 52, 243, 11, 202, 59, 250, 7, 198, 55, 246 ],
-        [ 135, 72, 183, 120, 131, 68, 179, 116, 138, 75, 186, 123, 134, 71, 182, 119 ],
-        [ 40, 231, 24, 215, 36, 227, 20, 211, 43, 234, 27, 218, 39, 230, 23, 214 ],
-        [ 167, 104, 151, 88, 163, 100, 147, 84, 170, 107, 154, 91, 166, 103, 150, 87 ],
-        [ 2, 193, 50, 241, 14, 205, 62, 253, 1, 192, 49, 240, 13, 204, 61, 252 ],
-        [ 129, 66, 177, 114, 141, 78, 189, 126, 128, 65, 176, 113, 140, 77, 188, 125 ],
-        [ 34, 225, 18, 209, 46, 237, 30, 221, 33, 224, 17, 208, 45, 236, 29, 220 ],
-        [ 161, 98, 145, 82, 173, 110, 157, 94, 160, 97, 144, 81, 172, 109, 156, 93 ],
-        [ 10, 201, 58, 249, 6, 197, 54, 245, 9, 200, 57, 248, 5, 196, 53, 244 ],
-        [ 137, 74, 185, 122, 133, 70, 181, 118, 136, 73, 184, 121, 132, 69, 180, 117 ],
-        [ 42, 233, 26, 217, 38, 229, 22, 213, 41, 232, 25, 216, 37, 228, 21, 212 ],
-        [ 169, 106, 153, 90, 165, 102, 149, 86, 168, 105, 152, 89, 164, 101, 148, 85 ],
+        [0, 191, 48, 239, 12, 203, 60, 251, 3, 194, 51, 242, 15, 206, 63, 254],
+        [127, 64, 175, 112, 139, 76, 187, 124, 130, 67, 178, 115, 142, 79, 190, 127],
+        [32, 223, 16, 207, 44, 235, 28, 219, 35, 226, 19, 210, 47, 238, 31, 222],
+        [159, 96, 143, 80, 171, 108, 155, 92, 162, 99, 146, 83, 174, 111, 158, 95],
+        [8, 199, 56, 247, 4, 195, 52, 243, 11, 202, 59, 250, 7, 198, 55, 246],
+        [135, 72, 183, 120, 131, 68, 179, 116, 138, 75, 186, 123, 134, 71, 182, 119],
+        [40, 231, 24, 215, 36, 227, 20, 211, 43, 234, 27, 218, 39, 230, 23, 214],
+        [167, 104, 151, 88, 163, 100, 147, 84, 170, 107, 154, 91, 166, 103, 150, 87],
+        [2, 193, 50, 241, 14, 205, 62, 253, 1, 192, 49, 240, 13, 204, 61, 252],
+        [129, 66, 177, 114, 141, 78, 189, 126, 128, 65, 176, 113, 140, 77, 188, 125],
+        [34, 225, 18, 209, 46, 237, 30, 221, 33, 224, 17, 208, 45, 236, 29, 220],
+        [161, 98, 145, 82, 173, 110, 157, 94, 160, 97, 144, 81, 172, 109, 156, 93],
+        [10, 201, 58, 249, 6, 197, 54, 245, 9, 200, 57, 248, 5, 196, 53, 244],
+        [137, 74, 185, 122, 133, 70, 181, 118, 136, 73, 184, 121, 132, 69, 180, 117],
+        [42, 233, 26, 217, 38, 229, 22, 213, 41, 232, 25, 216, 37, 228, 21, 212],
+        [169, 106, 153, 90, 165, 102, 149, 86, 168, 105, 152, 89, 164, 101, 148, 85],
     ]
     let selectedMatrix = _2Matrix;
     let length = 2;
@@ -258,6 +258,63 @@ export function applyPixelate(canvasId, optionsStr) {
     ctx.putImageData(imageData, 0, 0);
 }
 
+export function applyPixelateAverage(canvasId, optionsStr) {
+    const canvas = document.getElementById(canvasId);
+    const ctx = canvas.getContext("2d");
+    const width = canvas.width;
+    const height = canvas.height;
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const data = imageData.data;
+    const options = JSON.parse(optionsStr);
+    const strength = options.strength.Value;
+    const pixelationStrength = 2 ** strength;
+    let pixelateValues = {};
+    for (let i = 0; i < data.length; i += 4) {
+        const coords = getCoordsForIndex(i, canvas);
+        const parentX = coords[0] - (coords[0] % pixelationStrength);
+        const parentY = coords[1] - (coords[1] % pixelationStrength);
+        const parentIndex = getIndexForCoords([parentX, parentY], canvas);
+        let pixelateValue = getPixelateValueForIndex(parentIndex, data, pixelationStrength, pixelateValues, canvas);
+        data[i + 0] = pixelateValue[0];
+        data[i + 1] = pixelateValue[1];
+        data[i + 2] = pixelateValue[2];
+    }
+    ctx.putImageData(imageData, 0, 0);
+}
+
+function getPixelateValueForIndex(index, imageData, pixelationStrength, calculatedValues, canvas) {
+    if (index in calculatedValues) {
+        return calculatedValues[index];
+    }
+
+    var indexCoords = getCoordsForIndex(index, canvas);
+    var farthestX = indexCoords[0] + pixelationStrength;
+    var farthestY = indexCoords[1] + pixelationStrength;
+    if (farthestX >= canvas.width || farthestY >= canvas.height) {
+        return [127, 127, 127, 255];
+    }
+
+    let indicesInPixel = [];
+    for (var j = 0; j < pixelationStrength; j++) {
+        var startingX = index + (canvas.width * 4 * j);
+
+        for (var i = startingX; i < startingX + (pixelationStrength * 4); i += 4) {
+            indicesInPixel.push(i);
+        }
+    }
+
+    let accumulatedValues = [0, 0, 0];
+    indicesInPixel.forEach((ind) => {
+        accumulatedValues[0] += imageData[ind + 0];
+        accumulatedValues[1] += imageData[ind + 1];
+        accumulatedValues[2] += imageData[ind + 2];
+    });
+
+    accumulatedValues = accumulatedValues.map(val => val / indicesInPixel.length);
+    calculatedValues[index] = accumulatedValues;
+    return accumulatedValues;
+}
+
 function gammaCorrectData(data) {
     let correctFunction = function (value) {
         return Math.pow(value, .7);
@@ -285,7 +342,6 @@ function getClosestWidthForContainer(img) {
 function getCoordsForIndex(i, canvas) {
     var coords = [];
     var width = canvas.width;
-    var height = canvas.height;
     var x = (i % (width * 4)) / 4;
     var tempI = i - (x * 4);
     var y = (tempI / (width * 4));
