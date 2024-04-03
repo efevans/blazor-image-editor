@@ -13,6 +13,15 @@
                 {
                     <MudCheckBox ValueChanged="(bool val) => { OnValueChanged(option, val); }" Value="@option.BinaryValue" Label="@option.Name.ToLower()" LabelPosition="LabelPosition.Start" Color="Color.Primary"></MudCheckBox>
                 }
+                else if (option.InputType == ArtCanvas.CanvasEffectOptionInputType.Radio)
+                {
+                    <MudRadioGroup Value="@option.StringValue" ValueChanged="(string val) => { OnValueChanged(option, val); }" T="string">
+                        @foreach (var selectOption in option.SelectOptions)
+                        {
+                            <MudRadio Size="Size.Small" Value="@selectOption" Color="Color.Primary" UnCheckedColor="Color.Default">@selectOption</MudRadio>
+                        }
+                    </MudRadioGroup>
+                }
             </div>
         }
     </MudStack>
@@ -57,6 +66,12 @@
     private void OnValueChanged(ArtCanvas.CanvasEffectOption option, int newValue)
     {
         option.Value = newValue;
+        OnValueChangedCallback();
+    }
+
+    private void OnValueChanged(ArtCanvas.CanvasEffectOption option, string newValue)
+    {
+        option.StringValue = newValue;
         OnValueChangedCallback();
     }
 

@@ -239,6 +239,28 @@ export function applyGammaCorrection(canvasId, optionsStr) {
 }
 
 export function applyPixelate(canvasId, optionsStr) {
+    const options = JSON.parse(optionsStr);
+    const type = options.type.StringValue;
+    switch (type) {
+        case "Average":
+            console.log("average");
+            applyPixelateAverage(canvasId, optionsStr);
+            break;
+        case "Saturation":
+            console.log("saturation");
+            applyPixelateSaturation(canvasId, optionsStr);
+            break;
+        case "Naive":
+            console.log("naive");
+            applyPixelateNaive(canvasId, optionsStr);
+            break;
+        default:
+            console.log("unexpected type");
+            break;
+    }
+}
+
+export function applyPixelateNaive(canvasId, optionsStr) {
     const canvas = document.getElementById(canvasId);
     const ctx = canvas.getContext("2d");
     const width = canvas.width;
@@ -274,7 +296,7 @@ export function applyPixelateAverage(canvasId, optionsStr) {
         const parentX = coords[0] - (coords[0] % pixelationStrength);
         const parentY = coords[1] - (coords[1] % pixelationStrength);
         const parentIndex = getIndexForCoords([parentX, parentY], canvas);
-        let pixelateValue = getPixelateValueForIndex(parentIndex, data, pixelationStrength, pixelateValues, canvas);
+        let pixelateValue = getAveragePixelateValueForIndex(parentIndex, data, pixelationStrength, pixelateValues, canvas);
         data[i + 0] = pixelateValue[0];
         data[i + 1] = pixelateValue[1];
         data[i + 2] = pixelateValue[2];
@@ -282,7 +304,7 @@ export function applyPixelateAverage(canvasId, optionsStr) {
     ctx.putImageData(imageData, 0, 0);
 }
 
-function getPixelateValueForIndex(index, imageData, pixelationStrength, calculatedValues, canvas) {
+function getAveragePixelateValueForIndex(index, imageData, pixelationStrength, calculatedValues, canvas) {
     if (index in calculatedValues) {
         return calculatedValues[index];
     }
@@ -313,6 +335,60 @@ function getPixelateValueForIndex(index, imageData, pixelationStrength, calculat
     accumulatedValues = accumulatedValues.map(val => val / indicesInPixel.length);
     calculatedValues[index] = accumulatedValues;
     return accumulatedValues;
+}
+
+export function applyPixelateSaturation(canvasId, optionsStr) {
+    const canvas = document.getElementById(canvasId);
+    const ctx = canvas.getContext("2d");
+    const width = canvas.width;
+    const height = canvas.height;
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const data = imageData.data;
+    const options = JSON.parse(optionsStr);
+    const strength = options.strength.Value;
+    const pixelationStrength = 2 ** strength;
+    let pixelateValues = {};
+    for (let i = 0; i < data.length; i += 4) {
+        const coords = getCoordsForIndex(i, canvas);
+        const parentX = coords[0] - (coords[0] % pixelationStrength);
+        const parentY = coords[1] - (coords[1] % pixelationStrength);
+        const parentIndex = getIndexForCoords([parentX, parentY], canvas);
+        let avgSaturationVal = getAverageHuePixelateValueForIndex(parentIndex, data, pixelationStrength, pixelateValues, canvas);
+        var [h, s, v] = rgb2hsv(data[i + 0], data[i + 1], data[i + 2]);
+        [data[i + 0], data[i + 1], data[i + 2]] = hsv2rgb(h, avgSaturationVal, v);
+    }
+    ctx.putImageData(imageData, 0, 0);
+}
+
+function getAverageHuePixelateValueForIndex(index, imageData, pixelationStrength, calculatedValues, canvas) {
+    if (index in calculatedValues) {
+        return calculatedValues[index];
+    }
+
+    var indexCoords = getCoordsForIndex(index, canvas);
+    var farthestX = indexCoords[0] + pixelationStrength;
+    var farthestY = indexCoords[1] + pixelationStrength;
+    if (farthestX >= canvas.width || farthestY >= canvas.height) {
+        return .5;
+    }
+
+    let indicesInPixel = [];
+    for (var j = 0; j < pixelationStrength; j++) {
+        var startingX = index + (canvas.width * 4 * j);
+
+        for (var i = startingX; i < startingX + (pixelationStrength * 4); i += 4) {
+            indicesInPixel.push(i);
+        }
+    }
+
+    let accumulatedSaturation = 0.0;
+    indicesInPixel.forEach((ind) => {
+        let [h, s, v] = rgb2hsv(imageData[ind + 0], imageData[ind + 1], imageData[ind + 2]);
+        accumulatedSaturation += s;
+    });
+    accumulatedSaturation /= indicesInPixel.length;
+    calculatedValues[index] = accumulatedSaturation;
+    return accumulatedSaturation;
 }
 
 function gammaCorrectData(data) {
@@ -380,3 +456,17 @@ function copyColorsToIndex(fromIndex, toIndex, colorData) {
     colorData[childBlueIndex] = colorData[parentBlueIndex];
     colorData[childAlphaIndex] = colorData[parentAlphaIndex];
 }
+
+// https://stackoverflow.com/a/54070620/3869501
+// input: r,g,b in [0,1], out: h in [0,360) and s,v in [0,1]
+function rgb2hsv(r, g, b) {
+    let v = Math.max(r, g, b), c = v - Math.min(r, g, b);
+    let h = c && ((v == r) ? (g - b) / c : ((v == g) ? 2 + (b - r) / c : 4 + (r - g) / c));
+    return [60 * (h < 0 ? h + 6 : h), v && c / v, v];
+}
+
+// input: h in [0,360] and s,v in [0,1] - output: r,g,b in [0,1]
+function hsv2rgb(h, s, v) {
+    let f = (n, k = (n + h / 60) % 6) => v - v * s * Math.max(Math.min(k, 4 - k, 1), 0);
+    return [f(5), f(3), f(1)];
+}  

@@ -35,7 +35,7 @@
 <div style="@(ImageIsUploaded ? "" : "display: none;")">
     <canvas id="@CleanCanvasId" @ref="CleanCanvasRef" style="display: none;"></canvas>
     <MudStack Row="true" Style="margin-right: -28rem; margin-left: -28rem;" Class="flex-grow-1 my-2">
-        <div class="d-flex flex-column align-center" style="width: 65%;">
+        <div class="d-flex flex-column align-end" style="width: 65%;">
             <canvas id="@MainCanvasId" @ref="MainCanvasRef" class="flex-grow-0" style="border: 1px solid black;"></canvas>
         </div>
         <MudSpacer />
@@ -272,7 +272,8 @@
                 case Effect.Pixelate:
                     return builder
                         .WithName("Pixelate")
-                        .WithJavascriptFunctionName("applyPixelateAverage")
+                        .WithJavascriptFunctionName("applyPixelate")
+                        .WithRadioOption("Type", "type", new() { "Average", "Saturation", "Naive", }, "Average")
                         .WithSliderOption("Strength", "strength", 2, 1, 5, 1)
                         .Build();
 
@@ -316,6 +317,12 @@
             return this;
         }
 
+        public CanvasEffectBuilder WithRadioOption(string name, string key, List<string> selectOptions, string defaultValue)
+        {
+            Options.Add(CanvasEffectOption.NewRadioOption(name, key, selectOptions, defaultValue));
+            return this;
+        }
+
         public ICanvasEffect Build()
         {
             var effect = new GenericCanvasEffect(JSModule, Name, Options, JavascriptFunctionName);
@@ -349,21 +356,42 @@
             BinaryValue = initialValue;
         }
 
-        public string Name { get; } = null!;
-        public string Key { get; } = null!;
-        public CanvasEffectOptionInputType InputType { get; } = CanvasEffectOptionInputType.Slider;
+        private CanvasEffectOption()
+        {
+
+        }
+
+        public static CanvasEffectOption NewRadioOption(string name, string key, List<string> values, string defaultValue)
+        {
+            var option = new CanvasEffectOption()
+                {
+                    InputType = CanvasEffectOptionInputType.Radio,
+                    Name = name,
+                    Key = key,
+                    SelectOptions = values,
+                    StringValue = defaultValue,
+                };
+            return option;
+        }
+
+        public string Name { get; private set; } = null!;
+        public string Key { get; private set; } = null!;
+        public CanvasEffectOptionInputType InputType { get; private set; } = CanvasEffectOptionInputType.Slider;
         public int Value { get; set; }
         public int MinValue { get; }
         public int MaxValue { get; }
         public int Step { get; }
         public bool BinaryValue { get; set; }
+        public string? StringValue { get; set; }
+        public List<string>? SelectOptions { get; set; }
     }
 
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum CanvasEffectOptionInputType
     {
         Slider,
-        Checkbox
+        Checkbox,
+        Radio
     }
 
     private static Dictionary<string, CanvasEffectOption> OptionsListToDictionary(List<CanvasEffectOption> options) => options.ToDictionary(o => o.Key, o => o);
