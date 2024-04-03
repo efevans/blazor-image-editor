@@ -58,43 +58,49 @@ export function applyFloydSteinbergDither(canvasId, optionsStr) {
     var height = canvas.height;
     const imageData = ctx.getImageData(0, 0, width, height);
     const data = imageData.data;
+    let options = JSON.parse(optionsStr);
+    let colorBits = options.colorBits.Value;
+    let colorStep = 256 / colorBits | 0;
     const correctionValues = Array(data.length).fill(0);
-    const thresholdValue = 255 * 3 / 2;
+    let accrueErrorFnc = function (canvas, parentCoords, offset, corrections, correctionRatio, correctionValues) {
+        let index = getIndexForCoords([parentCoords[0] + offset[0], parentCoords[1] + offset[1]], canvas);
+        accrueErrorForIndex(correctionValues, index + 0, corrections[0], correctionRatio);
+        accrueErrorForIndex(correctionValues, index + 1, corrections[1], correctionRatio);
+        accrueErrorForIndex(correctionValues, index + 2, corrections[2], correctionRatio);
+    }
     for (let i = 0; i < data.length; i += 4) {
-        var accumulatedValue = data[i] + data[i + 1] + data[i + 2] + (correctionValues[i] ?? 0);
-        var correctionValue = 0;
-        if (accumulatedValue >= thresholdValue) {
-            data[i] = 255;
-            data[i + 1] = 255;
-            data[i + 2] = 255;
-            correctionValue = accumulatedValue - 765;
-        } else {
-            data[i] = 0;
-            data[i + 1] = 0;
-            data[i + 2] = 0;
-            correctionValue = accumulatedValue;
-        }
+        let [redCorrection, greenCorrection, blueCorrection] = [0, 0, 0];
+        [data[i + 0], redCorrection] = getClosestValueWithError(data[i + 0], (correctionValues[i + 0] ?? 0), colorStep);
+        [data[i + 1], greenCorrection] = getClosestValueWithError(data[i + 1], (correctionValues[i + 1] ?? 0), colorStep);
+        [data[i + 2], blueCorrection] = getClosestValueWithError(data[i + 2], (correctionValues[i + 2] ?? 0), colorStep);
         var coords = getCoordsForIndex(i, canvas);
         if (!coordIsOnRightEdge(coords, canvas)) {
-            let rightIndex = getIndexForCoords([coords[0] + 1, coords[1]], canvas);
-            let addedValue = Math.round(correctionValue * 7.0 / 16.0);
-            let existingValue = (correctionValues[rightIndex] ?? 0.0);
-            correctionValues[rightIndex] = addedValue + existingValue;
+            accrueErrorFnc(canvas, coords, [1, 0], [redCorrection, greenCorrection, blueCorrection], 7.0 / 16.0, correctionValues);
         }
         if (!coordIsOnLeftEdge(coords, canvas) && !coordIsOnBottomEdge(coords, canvas)) {
-            let bottomLeftIndex = getIndexForCoords([coords[0] - 1, coords[1] + 1], canvas);
-            correctionValues[bottomLeftIndex] = Math.round(correctionValue * 3.0 / 16.0) + (correctionValues[bottomLeftIndex] ?? 0.0);
+            accrueErrorFnc(canvas, coords, [-1, 1], [redCorrection, greenCorrection, blueCorrection], 3.0 / 16.0, correctionValues);
         }
         if (!coordIsOnBottomEdge(coords, canvas)) {
-            let bottomIndex = getIndexForCoords([coords[0], coords[1] + 1], canvas);
-            correctionValues[bottomIndex] = Math.round(correctionValue * 5.0 / 16.0) + (correctionValues[bottomIndex] ?? 0.0);
+            accrueErrorFnc(canvas, coords, [0, 1], [redCorrection, greenCorrection, blueCorrection], 5.0 / 16.0, correctionValues);
         }
         if (!coordIsOnRightEdge(coords, canvas) && !coordIsOnBottomEdge(coords, canvas)) {
-            let bottomRightIndex = getIndexForCoords([coords[0] + 1, coords[1] + 1], canvas);
-            correctionValues[bottomRightIndex] = Math.round(correctionValue * 1.0 / 16.0) + (correctionValues[bottomRightIndex] ?? 0.0);
+            accrueErrorFnc(canvas, coords, [1, 1], [redCorrection, greenCorrection, blueCorrection], 1.0 / 16.0, correctionValues);
         }
     }
     ctx.putImageData(imageData, 0, 0);
+}
+
+function getClosestValueWithError(val, correction, colorStep) {
+    var withCorrection = val + correction;
+    var normalizedRGB = ((withCorrection + 1) / colorStep);
+    var roundedTotal = Math.round(normalizedRGB);
+    var unnormalizedRGB = roundedTotal * colorStep;
+    var clampedRGB = Math.max(0, Math.min(255, unnormalizedRGB));
+    return [clampedRGB, withCorrection - clampedRGB];
+}
+
+function accrueErrorForIndex(errorsArray, index, addedValue, correctionRatio) {
+    errorsArray[index] = (errorsArray[index] ?? 0.0) + (addedValue * correctionRatio);
 }
 
 export function applyOrderedDither(canvasId, optionsStr) {

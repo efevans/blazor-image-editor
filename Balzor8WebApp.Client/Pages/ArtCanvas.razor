@@ -246,6 +246,7 @@
                     return builder
                         .WithName("FS-Dither")
                         .WithJavascriptFunctionName("applyFloydSteinbergDither")
+                        .WithSliderOption("Color Bits", "colorBits", 1, 1, 8, 1)
                         .Build();
 
                 case Effect.OrderedDither:
