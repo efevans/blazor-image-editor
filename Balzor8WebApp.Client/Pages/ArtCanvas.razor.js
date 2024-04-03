@@ -59,32 +59,62 @@ export function applyFloydSteinbergDither(canvasId, optionsStr) {
     const imageData = ctx.getImageData(0, 0, width, height);
     const data = imageData.data;
     let options = JSON.parse(optionsStr);
+    let grayscale = options.grayscale.BinaryValue;
     let colorBits = options.colorBits.Value;
     let colorStep = 256 / colorBits | 0;
     const correctionValues = Array(data.length).fill(0);
-    let accrueErrorFnc = function (canvas, parentCoords, offset, corrections, correctionRatio, correctionValues) {
-        let index = getIndexForCoords([parentCoords[0] + offset[0], parentCoords[1] + offset[1]], canvas);
-        accrueErrorForIndex(correctionValues, index + 0, corrections[0], correctionRatio);
-        accrueErrorForIndex(correctionValues, index + 1, corrections[1], correctionRatio);
-        accrueErrorForIndex(correctionValues, index + 2, corrections[2], correctionRatio);
-    }
-    for (let i = 0; i < data.length; i += 4) {
-        let [redCorrection, greenCorrection, blueCorrection] = [0, 0, 0];
-        [data[i + 0], redCorrection] = getClosestValueWithError(data[i + 0], (correctionValues[i + 0] ?? 0), colorStep);
-        [data[i + 1], greenCorrection] = getClosestValueWithError(data[i + 1], (correctionValues[i + 1] ?? 0), colorStep);
-        [data[i + 2], blueCorrection] = getClosestValueWithError(data[i + 2], (correctionValues[i + 2] ?? 0), colorStep);
-        var coords = getCoordsForIndex(i, canvas);
-        if (!coordIsOnRightEdge(coords, canvas)) {
-            accrueErrorFnc(canvas, coords, [1, 0], [redCorrection, greenCorrection, blueCorrection], 7.0 / 16.0, correctionValues);
+
+    if (grayscale) {
+        let accrueErrorFnc = function (canvas, parentCoords, offset, correction, correctionRatio, correctionValues) {
+            let index = getIndexForCoords([parentCoords[0] + offset[0], parentCoords[1] + offset[1]], canvas);
+            accrueErrorForIndex(correctionValues, index, correction, correctionRatio);
         }
-        if (!coordIsOnLeftEdge(coords, canvas) && !coordIsOnBottomEdge(coords, canvas)) {
-            accrueErrorFnc(canvas, coords, [-1, 1], [redCorrection, greenCorrection, blueCorrection], 3.0 / 16.0, correctionValues);
+
+        for (let i = 0; i < data.length; i += 4) {
+            let newVal = 0, correction = 0;
+            let colorAvg = (data[i + 0] + data[i + 1] + data[i + 2]) / 3.0;
+            [newVal, correction] = getClosestValueWithError(colorAvg, (correctionValues[i + 0] ?? 0), colorStep);
+            data[i + 0] = data[i + 1] = data[i + 2] = newVal;
+            var coords = getCoordsForIndex(i, canvas);
+            if (!coordIsOnRightEdge(coords, canvas)) {
+                accrueErrorFnc(canvas, coords, [1, 0], correction, 7.0 / 16.0, correctionValues);
+            }
+            if (!coordIsOnLeftEdge(coords, canvas) && !coordIsOnBottomEdge(coords, canvas)) {
+                accrueErrorFnc(canvas, coords, [-1, 1], correction, 3.0 / 16.0, correctionValues);
+            }
+            if (!coordIsOnBottomEdge(coords, canvas)) {
+                accrueErrorFnc(canvas, coords, [0, 1], correction, 5.0 / 16.0, correctionValues);
+            }
+            if (!coordIsOnRightEdge(coords, canvas) && !coordIsOnBottomEdge(coords, canvas)) {
+                accrueErrorFnc(canvas, coords, [1, 1], correction, 1.0 / 16.0, correctionValues);
+            }
         }
-        if (!coordIsOnBottomEdge(coords, canvas)) {
-            accrueErrorFnc(canvas, coords, [0, 1], [redCorrection, greenCorrection, blueCorrection], 5.0 / 16.0, correctionValues);
+    } else {
+        let accrueErrorFnc = function (canvas, parentCoords, offset, corrections, correctionRatio, correctionValues) {
+            let index = getIndexForCoords([parentCoords[0] + offset[0], parentCoords[1] + offset[1]], canvas);
+            accrueErrorForIndex(correctionValues, index + 0, corrections[0], correctionRatio);
+            accrueErrorForIndex(correctionValues, index + 1, corrections[1], correctionRatio);
+            accrueErrorForIndex(correctionValues, index + 2, corrections[2], correctionRatio);
         }
-        if (!coordIsOnRightEdge(coords, canvas) && !coordIsOnBottomEdge(coords, canvas)) {
-            accrueErrorFnc(canvas, coords, [1, 1], [redCorrection, greenCorrection, blueCorrection], 1.0 / 16.0, correctionValues);
+
+        for (let i = 0; i < data.length; i += 4) {
+            let [redCorrection, greenCorrection, blueCorrection] = [0, 0, 0];
+            [data[i + 0], redCorrection] = getClosestValueWithError(data[i + 0], (correctionValues[i + 0] ?? 0), colorStep);
+            [data[i + 1], greenCorrection] = getClosestValueWithError(data[i + 1], (correctionValues[i + 1] ?? 0), colorStep);
+            [data[i + 2], blueCorrection] = getClosestValueWithError(data[i + 2], (correctionValues[i + 2] ?? 0), colorStep);
+            var coords = getCoordsForIndex(i, canvas);
+            if (!coordIsOnRightEdge(coords, canvas)) {
+                accrueErrorFnc(canvas, coords, [1, 0], [redCorrection, greenCorrection, blueCorrection], 7.0 / 16.0, correctionValues);
+            }
+            if (!coordIsOnLeftEdge(coords, canvas) && !coordIsOnBottomEdge(coords, canvas)) {
+                accrueErrorFnc(canvas, coords, [-1, 1], [redCorrection, greenCorrection, blueCorrection], 3.0 / 16.0, correctionValues);
+            }
+            if (!coordIsOnBottomEdge(coords, canvas)) {
+                accrueErrorFnc(canvas, coords, [0, 1], [redCorrection, greenCorrection, blueCorrection], 5.0 / 16.0, correctionValues);
+            }
+            if (!coordIsOnRightEdge(coords, canvas) && !coordIsOnBottomEdge(coords, canvas)) {
+                accrueErrorFnc(canvas, coords, [1, 1], [redCorrection, greenCorrection, blueCorrection], 1.0 / 16.0, correctionValues);
+            }
         }
     }
     ctx.putImageData(imageData, 0, 0);
