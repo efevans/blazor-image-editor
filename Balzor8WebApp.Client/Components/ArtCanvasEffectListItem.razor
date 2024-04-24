@@ -11,14 +11,14 @@
                 }
                 else if (option.InputType == ArtCanvas.CanvasEffectOptionInputType.Checkbox)
                 {
-                    <MudCheckBox ValueChanged="(bool val) => { OnValueChanged(option, val); }" Value="@option.BinaryValue" Label="@option.Name.ToLower()" LabelPosition="LabelPosition.Start" Color="Color.Primary"></MudCheckBox>
+                    <MudCheckBox ValueChanged="(bool val) => { OnValueChanged(option, val); }" Value="@option.BinaryValue" Label="@option.Name.ToLower()" LabelPosition="LabelPosition.Start" Color="MudColor.Primary"></MudCheckBox>
                 }
                 else if (option.InputType == ArtCanvas.CanvasEffectOptionInputType.Radio)
                 {
                     <MudRadioGroup Value="@option.StringValue" ValueChanged="(string val) => { OnValueChanged(option, val); }" T="string">
                         @foreach (var selectOption in option.SelectOptions)
                         {
-                            <MudRadio Size="Size.Small" Value="@selectOption" Color="Color.Primary" UnCheckedColor="Color.Default">@selectOption</MudRadio>
+                            <MudRadio Size="MudSize.Small" Value="@selectOption" Color="MudColor.Primary" UnCheckedColor="MudColor.Default">@selectOption</MudRadio>
                         }
                     </MudRadioGroup>
                 }
@@ -26,10 +26,10 @@
         }
     </MudStack>
     <MudSpacer />
-    <MudCheckBox Dense="true" ValueChanged="(bool val) => { OnEnableToggled(val); }" Value="EffectItem.Effect.Enabled" Class="align-self-start" Color="Color.Dark"></MudCheckBox>
-    <MudIconButton Target="_blank" Icon="@Icons.Material.Filled.DeleteOutline" OnClick="OnDelete" Class="p-1" Color="Color.Secondary" />
+    <MudCheckBox Dense="true" ValueChanged="(bool val) => { OnEnableToggled(val); }" Value="EffectItem.Effect.Enabled" Class="align-self-start" Color="MudColor.Dark"></MudCheckBox>
+    <MudIconButton Target="_blank" Icon="@Icons.Material.Filled.DeleteOutline" OnClick="OnDelete" Class="p-1" Color="MudColor.Secondary" />
     <MudPaper Elevation="0" Class="mt-1">
-        <MudIcon Size=Size.Small Icon="@Icons.Material.Filled.DragIndicator" Class="ml-2 cursor-grab" @onmousedown="OnHandleMouseDown" @onmouseup="OnHandleMouseUp" Title="Drag" />
+        <MudIcon Size=MudSize.Small Icon="@Icons.Material.Filled.DragIndicator" Class="ml-2 cursor-grab" @onmousedown="OnHandleMouseDown" @onmouseup="OnHandleMouseUp" Title="Drag" />
     </MudPaper>
 </MudPaper>
 

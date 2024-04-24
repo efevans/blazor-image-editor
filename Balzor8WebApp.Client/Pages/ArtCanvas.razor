@@ -8,7 +8,7 @@
 <MudStack Row="true" AlignItems="AlignItems.Start" Justify="Justify.FlexStart">
     <InputFile id="@FileInputId" @ref="InputFileRef" style="display: none;" OnChange="ShowPreview" />
     <MudFab HtmlTag="label"
-            Color="Color.Primary"
+            Color="MudColor.Primary"
             StartIcon="@Icons.Material.Filled.Image"
             Label="Upload Image"
             Disabled="!AssemblyIsLoaded"
@@ -16,8 +16,8 @@
     @if (ImageIsUploaded)
     {
         <div class="d-flex flex-row gap-2 my-2">
-            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="HandleSave">Save</MudButton>
-            <MudButton Color="Color.Secondary" Variant="Variant.Filled" OnClick="HandleReset">Reset</MudButton>
+            <MudButton Color="MudColor.Primary" Variant="Variant.Filled" OnClick="HandleSave">Save</MudButton>
+            <MudButton Color="MudColor.Secondary" Variant="Variant.Filled" OnClick="HandleReset">Reset</MudButton>
         </div>
         @if (ShowStretchedImageAlert)
         {
@@ -28,7 +28,7 @@
 @if (!AssemblyIsLoaded)
 {
     <div class="d-flex flex-row justify-center" style="min-height: 25rem;">
-        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        <MudProgressCircular Color="MudColor.Primary" Indeterminate="true" />
     </div>
 }
 
@@ -41,11 +41,11 @@
         <MudSpacer />
         <MudStack AlignItems="AlignItems.Start" Justify="Justify.FlexStart" Style="width:30%;">
             <MudStack Row="true" Spacing="2" Class="flex-wrap">
-                <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.FloydSteinbergDither); }">Floyd-Steinberg Dither</MudButton>
-                <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.OrderedDither); }">Ordered Dither</MudButton>
-                <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.Invert); }">Invert</MudButton>
-                <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.GammaCorrect); }">Gamma Correction</MudButton>
-                <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.Pixelate); }">Pixelate</MudButton>
+                <MudButton Color="MudColor.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.FloydSteinbergDither); }">Floyd-Steinberg Dither</MudButton>
+                <MudButton Color="MudColor.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.OrderedDither); }">Ordered Dither</MudButton>
+                <MudButton Color="MudColor.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.Invert); }">Invert</MudButton>
+                <MudButton Color="MudColor.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.GammaCorrect); }">Gamma Correction</MudButton>
+                <MudButton Color="MudColor.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.Pixelate); }">Pixelate</MudButton>
             </MudStack>
             <MudDropContainer @ref="EffectsUIListRef" ItemIsDisabled="@((item) => !item.Draggable)" T="EffectItem" Items="Effects" ItemsSelector="@((item,dropzone) => true)" ItemDropped="ItemUpdated" Class="d-flex flex-wrap flex-grow-0 align-start" Style="width: 100%;">
                 <ChildContent>
@@ -80,6 +80,8 @@
     private bool AssemblyIsLoaded = false;
     private bool ImageIsUploaded = false;
     private bool ShowStretchedImageAlert = false;
+
+    private byte[] _cleanImageBytes;
 
     private MudDropContainer<EffectItem> EffectsUIListRef { get; set; } = null!;
 
@@ -143,12 +145,17 @@
         }
     }
 
+    private record CanvasDimensions(int Width, int Height);
+
     private async Task ShowPreview(InputFileChangeEventArgs e)
     {
         Log("File Uploaded");
         var streamRef = new DotNetStreamReference(e.File.OpenReadStream(e.File.Size));
-        var json = await JSModule.Value.InvokeAsync<string>("getImageDimensions", streamRef);
-        var dimensions = JsonSerializer.Deserialize<ImageDimensions>(json)!;
+        await JSModule.Value.InvokeVoidAsync("setImage", streamRef, MainCanvasRef);
+        // await Task.Delay(100);
+        var dimensions = await JSModule.Value.InvokeAsync<CanvasDimensions>("getDimensions", MainCanvasRef);
+        // var json = await JSModule.Value.InvokeAsync<string>("getImageDimensions", streamRef);
+        // var dimensions = JsonSerializer.Deserialize<ImageDimensions>(json)!;
         if (dimensions.Width > 1150)
         {
             ShowStretchedImageAlert = true;
@@ -156,10 +163,8 @@
         ImageIsUploaded = true;
         Effects.Clear();
         EffectsUIListRef.Refresh();
-        await JS.InvokeVoidAsync("previewImage", InputFileRef!.Element, MainCanvasRef, CleanCanvasRef);
+        // await JS.InvokeVoidAsync("previewImage", InputFileRef!.Element, MainCanvasRef, CleanCanvasRef);
     }
-
-    record ImageDimensions(int Width, int Height);
 
     private void RemoveStretchedImageUploadAlert()
     {
