@@ -90,15 +90,13 @@
         Effects.ForEach(e => e.Draggable = false);
         Effects.UpdateOrder(dropItem, item => item.Order);
         Effects.Sort((e1, e2) => e1.Order > e2.Order ? 1 : -1);
-        ResetImage(MainCanvasId, CleanCanvasId);
-        ApplyEffects();
+        RedrawCanvas();
     }
 
     private void OnEffectOptionValueChangedCallback()
     {
         Log("ValueChanged callback");
-        ResetImage(MainCanvasId, CleanCanvasId);
-        ApplyEffects();
+        RedrawCanvas();
     }
 
     private void OnEffectItemDragStateChanged()
@@ -110,8 +108,15 @@
     {
         Effects.Remove(item);
         EffectsUIListRef.Refresh();
-        ResetImage(MainCanvasId, CleanCanvasId);
-        ApplyEffects();
+        RedrawCanvas();
+    }
+
+    private void RedrawCanvas()
+    {
+        // ResetImage(MainCanvasId, CleanCanvasId);
+        var canvasBytes = _cleanImageBytes.ToArray();
+        ApplyEffects(canvasBytes);
+        SetBytes(MainCanvasId, canvasBytes);
     }
 
     private List<EffectItem> Effects = new();
@@ -152,10 +157,9 @@
         Log("File Uploaded");
         var streamRef = new DotNetStreamReference(e.File.OpenReadStream(e.File.Size));
         await JSModule.Value.InvokeVoidAsync("setImage", streamRef, MainCanvasRef);
-        // await Task.Delay(100);
+        _cleanImageBytes = GetBytes(MainCanvasId);
+
         var dimensions = await JSModule.Value.InvokeAsync<CanvasDimensions>("getDimensions", MainCanvasRef);
-        // var json = await JSModule.Value.InvokeAsync<string>("getImageDimensions", streamRef);
-        // var dimensions = JsonSerializer.Deserialize<ImageDimensions>(json)!;
         if (dimensions.Width > 1150)
         {
             ShowStretchedImageAlert = true;
@@ -163,7 +167,6 @@
         ImageIsUploaded = true;
         Effects.Clear();
         EffectsUIListRef.Refresh();
-        // await JS.InvokeVoidAsync("previewImage", InputFileRef!.Element, MainCanvasRef, CleanCanvasRef);
     }
 
     private void RemoveStretchedImageUploadAlert()
@@ -185,21 +188,21 @@
         EffectsUIListRef.Refresh();
     }
 
-    private void ApplyEffect(ICanvasEffect effect)
+    private byte[] ApplyEffect(ICanvasEffect effect, byte[] bytes)
     {
         if (!effect.Enabled)
         {
-            return;
+            return bytes;
         }
         Log("Applying Effect");
-        effect.Apply(MainCanvasId);
+        return effect.Apply(bytes);
     }
 
-    private void ApplyEffects()
+    private void ApplyEffects(byte[] bytes)
     {
         foreach (var effect in Effects)
         {
-            ApplyEffect(effect.Effect);
+            ApplyEffect(effect.Effect, bytes);
         }
     }
 
@@ -208,25 +211,34 @@
         var effect = (new CanvasEffectFactory()).CreateFor(effectType, JSModule.Value);
         Effects.Add(new EffectItem { Effect = effect, Order = Effects.Count });
         EffectsUIListRef.Refresh();
+        var canvasBytes = GetBytes(MainCanvasId);
 
         if (apply)
         {
-            ApplyEffect(effect);
+            canvasBytes = ApplyEffect(effect, canvasBytes);
+            SetBytes(MainCanvasId, canvasBytes);
         }
     }
 
-    private class GenericCanvasEffect(IJSObjectReference jsModule, string name, List<CanvasEffectOption> options, string javascriptMethodName) : ICanvasEffect
+    private class GenericCanvasEffect(IJSObjectReference jsModule, string name, List<CanvasEffectOption> options, string javascriptMethodName, IPostProcesser postProcess) : ICanvasEffect
     {
         private IJSObjectReference JSModule { get; } = jsModule;
         public string Name => name;
         public bool Enabled { get; set; } = true;
         public List<CanvasEffectOption> Options => options;
         public string JavascriptFunctionName => javascriptMethodName;
+        private IPostProcesser PostProcess => postProcess;
 
         public async Task Apply(string canvasId)
         {
             ArtCanvas.Log($"In Apply: {Name}, javascript func: {JavascriptFunctionName}");
             await JSModule.InvokeVoidAsync(JavascriptFunctionName, canvasId, JsonSerializer.Serialize(ArtCanvas.OptionsListToDictionary(Options)));
+        }
+
+        public byte[] Apply(byte[] bytes)
+        {
+            PostProcess.Process(bytes, ArtCanvas.OptionsListToDictionary(Options));
+            return bytes;
         }
     }
 
@@ -235,8 +247,7 @@
         public string Name { get; }
         public bool Enabled { get; set; }
         public List<CanvasEffectOption> Options { get; }
-        public string JavascriptFunctionName { get; }
-        Task Apply(string canvasId);
+        byte[] Apply(byte[] bytes);
     }
 
     private class CanvasEffectFactory
@@ -268,6 +279,7 @@
                     return builder
                         .WithName("Invert")
                         .WithJavascriptFunctionName("applyInvert")
+                        .WithPostProcess(new ColorInverter())
                         .Build();
 
                 case Effect.GammaCorrect:
@@ -299,6 +311,7 @@
         private string Name { get; set; } = String.Empty;
         private List<CanvasEffectOption> Options { get; set; } = new List<CanvasEffectOption>();
         private string JavascriptFunctionName { get; set; } = String.Empty;
+        private IPostProcesser PostProcess { get; set; } = new NoOpPostProcessor();
 
         public CanvasEffectBuilder WithName(string name)
         {
@@ -309,6 +322,12 @@
         public CanvasEffectBuilder WithJavascriptFunctionName(string javascriptFunctionName)
         {
             JavascriptFunctionName = javascriptFunctionName;
+            return this;
+        }
+
+        public CanvasEffectBuilder WithPostProcess(IPostProcesser postProcess)
+        {
+            PostProcess = postProcess;
             return this;
         }
 
@@ -332,10 +351,11 @@
 
         public ICanvasEffect Build()
         {
-            var effect = new GenericCanvasEffect(JSModule, Name, Options, JavascriptFunctionName);
+            var effect = new GenericCanvasEffect(JSModule, Name, Options, JavascriptFunctionName, PostProcess);
             Name = String.Empty;
             Options = new List<CanvasEffectOption>();
             JavascriptFunctionName = String.Empty;
+            PostProcess = new NoOpPostProcessor();
 
             return effect;
         }

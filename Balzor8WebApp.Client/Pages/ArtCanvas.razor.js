@@ -20,21 +20,6 @@ export async function setImage(content, canvasElement) {
     });
 }
 
-export async function setImage2(inputElement, canvasElement) {
-    const url = URL.createObjectURL(inputElement.files[0]);
-    const img = new Image();
-    img.onload = function () {
-        let canvas = canvasElement;
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        let canvasStyleWidth = getClosestWidthForContainer(canvas.width);
-        canvas.style.width = canvasStyleWidth + 'px';
-        canvas.style.height = (canvasStyleWidth * (canvas.height / canvas.width)) + 'px';
-        canvas.getContext("2d").drawImage(img, 0, 0);
-    };
-    img.src = url;
-}
-
 export async function getDimensions(canvasElement) {
     let canvas = canvasElement;
     return { Width: canvas.width, Height: canvas.height };
