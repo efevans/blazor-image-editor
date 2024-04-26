@@ -47,38 +47,6 @@ export function setPixelDataToCanvas(canvasId, bytes) {
     ctx.putImageData(imageData, 0, 0);
 }
 
-export async function getImageDimensions(content) {
-    const url = URL.createObjectURL(new Blob([await content.arrayBuffer()]))
-    const dimensions = await new Promise(resolve => {
-        const img = new Image();
-        img.onload = function () {
-            const data = { Width: img.naturalWidth, Height: img.naturalHeight };
-            resolve(data);
-        };
-        img.src = url;
-    });
-    return JSON.stringify(dimensions);
-}
-
-window.previewImage = (inputElement, canvasElement, cleanCanvasElement) => {
-    const imgLink = URL.createObjectURL(inputElement.files[0]);
-    const img = new Image();
-    img.src = imgLink;
-    var targetImg = img;
-    targetImg.onload = function () {
-        var canvas = canvasElement;
-        var cleanCanvas = cleanCanvasElement;
-        canvas.width = cleanCanvas.width = targetImg.naturalWidth;
-        canvas.height = cleanCanvas.height = targetImg.naturalHeight;
-        var canvasStyleWidth = getClosestWidthForContainer(canvas.width);
-        canvas.style.width = canvasStyleWidth + 'px';
-        canvas.style.height = (canvasStyleWidth * (canvas.height / canvas.width)) + 'px';
-
-        canvas.getContext("2d").drawImage(targetImg, 0, 0);
-        cleanCanvas.getContext("2d").drawImage(targetImg, 0, 0);
-    }
-}
-
 export function saveImage(canvasId) {
     const canvas = document.getElementById(canvasId);
     const image = canvas.toDataURL("image/png");
