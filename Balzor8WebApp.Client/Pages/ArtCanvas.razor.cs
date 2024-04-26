@@ -14,9 +14,6 @@ namespace Balzor8WebApp.Client.Pages
         [JSImport("saveImage", "ArtCanvas")]
         internal static partial void SaveImage(string canvasId);
 
-        [JSImport("resetImage", "ArtCanvas")]
-        internal static partial void ResetImage(string canvasId, string cleanCanvasId);
-
         [JSImport("getPixelDataFromCanvas", "ArtCanvas")]
         internal static partial byte[] GetBytes(string canvasId);
 

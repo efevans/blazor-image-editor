@@ -184,7 +184,7 @@
     {
         Log("File Reset");
         Effects.Clear();
-        ResetImage(MainCanvasId, CleanCanvasId);
+        SetBytes(MainCanvasId, _cleanImageBytes);
         EffectsUIListRef.Refresh();
     }
 
@@ -220,20 +220,13 @@
         }
     }
 
-    private class GenericCanvasEffect(IJSObjectReference jsModule, string name, List<CanvasEffectOption> options, string javascriptMethodName, IPostProcesser postProcess) : ICanvasEffect
+    private class GenericCanvasEffect(IJSObjectReference jsModule, string name, List<CanvasEffectOption> options, IPostProcesser postProcess) : ICanvasEffect
     {
         private IJSObjectReference JSModule { get; } = jsModule;
         public string Name => name;
         public bool Enabled { get; set; } = true;
         public List<CanvasEffectOption> Options => options;
-        public string JavascriptFunctionName => javascriptMethodName;
         private IPostProcesser PostProcess => postProcess;
-
-        public async Task Apply(string canvasId)
-        {
-            ArtCanvas.Log($"In Apply: {Name}, javascript func: {JavascriptFunctionName}");
-            await JSModule.InvokeVoidAsync(JavascriptFunctionName, canvasId, JsonSerializer.Serialize(ArtCanvas.OptionsListToDictionary(Options)));
-        }
 
         public byte[] Apply(byte[] bytes)
         {
@@ -261,7 +254,6 @@
                 case Effect.FloydSteinbergDither:
                     return builder
                         .WithName("FS-Dither")
-                        .WithJavascriptFunctionName("applyFloydSteinbergDither")
                         .WithSliderOption("Color Bits", "colorBits", 1, 1, 8, 1)
                         .WithCheckboxOption("Grayscale", "grayscale", false)
                         .Build();
@@ -269,7 +261,6 @@
                 case Effect.OrderedDither:
                     return builder
                         .WithName("O-Dither")
-                        .WithJavascriptFunctionName("applyOrderedDither")
                         .WithSliderOption("Strength", "strength", 2, 0, 4, 1)
                         .WithSliderOption("Color Bits", "colorBits", 1, 1, 8, 1)
                         .WithCheckboxOption("Grayscale", "grayscale", false)
@@ -278,20 +269,17 @@
                 case Effect.Invert:
                     return builder
                         .WithName("Invert")
-                        .WithJavascriptFunctionName("applyInvert")
                         .WithPostProcess(new ColorInverter())
                         .Build();
 
                 case Effect.GammaCorrect:
                     return builder
                         .WithName("Gamma")
-                        .WithJavascriptFunctionName("applyGammaCorrection")
                         .Build();
 
                 case Effect.Pixelate:
                     return builder
                         .WithName("Pixelate")
-                        .WithJavascriptFunctionName("applyPixelate")
                         .WithRadioOption("Type", "type", new() { "Average", "Saturation", "Naive", }, "Average")
                         .WithSliderOption("Strength", "strength", 2, 1, 5, 1)
                         .Build();
@@ -299,7 +287,6 @@
                 default:
                     return builder
                         .WithName("FS-Dither")
-                        .WithJavascriptFunctionName("applyFloydSteinbergDither")
                         .Build();
             }
         }
@@ -310,18 +297,11 @@
         private IJSObjectReference JSModule { get; } = jsModule;
         private string Name { get; set; } = String.Empty;
         private List<CanvasEffectOption> Options { get; set; } = new List<CanvasEffectOption>();
-        private string JavascriptFunctionName { get; set; } = String.Empty;
         private IPostProcesser PostProcess { get; set; } = new NoOpPostProcessor();
 
         public CanvasEffectBuilder WithName(string name)
         {
             Name = name;
-            return this;
-        }
-
-        public CanvasEffectBuilder WithJavascriptFunctionName(string javascriptFunctionName)
-        {
-            JavascriptFunctionName = javascriptFunctionName;
             return this;
         }
 
@@ -351,10 +331,9 @@
 
         public ICanvasEffect Build()
         {
-            var effect = new GenericCanvasEffect(JSModule, Name, Options, JavascriptFunctionName, PostProcess);
+            var effect = new GenericCanvasEffect(JSModule, Name, Options, PostProcess);
             Name = String.Empty;
             Options = new List<CanvasEffectOption>();
-            JavascriptFunctionName = String.Empty;
             PostProcess = new NoOpPostProcessor();
 
             return effect;

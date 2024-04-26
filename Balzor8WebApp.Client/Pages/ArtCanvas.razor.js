@@ -57,13 +57,6 @@ export function saveImage(canvasId) {
     link.click();
 }
 
-export function resetImage(canvasId, cleanCanvasId) {
-    var canvas = document.getElementById(canvasId);
-    var cleanCanvas = document.getElementById(cleanCanvasId);
-    var ctx = canvas.getContext("2d");
-    ctx.drawImage(cleanCanvas, 0, 0);
-}
-
 export function applyFloydSteinbergDither(canvasId, optionsStr) {
     var canvas = document.getElementById(canvasId);
     var ctx = canvas.getContext("2d");
@@ -259,21 +252,6 @@ function getClosestValue(val, thresholdValue, colorStep, steps) {
     var unnormalizedRGB = roundedTotal * colorStep;
     var clampedRGB = Math.max(0, Math.min(255, unnormalizedRGB));
     return clampedRGB;
-}
-
-export function applyInvert(canvasId, optionsStr) {
-    var canvas = document.getElementById(canvasId);
-    var ctx = canvas.getContext("2d");
-    var width = canvas.width;
-    var height = canvas.height;
-    const imageData = ctx.getImageData(0, 0, width, height);
-    const data = imageData.data;
-    for (let i = 0; i < data.length; i += 4) {
-        data[i] = 255 - data[i];
-        data[i + 1] = 255 - data[i + 1];
-        data[i + 2] = 255 - data[i + 2];
-    }
-    ctx.putImageData(imageData, 0, 0);
 }
 
 export function applyGammaCorrection(canvasId, optionsStr) {
