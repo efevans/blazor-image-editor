@@ -34,6 +34,7 @@ export function getPixelDataFromCanvas(canvasId) {
 }
 
 export function setPixelDataToCanvas(canvasId, bytes) {
+    console.log("Setting pixel data to canvas");
     const canvas = document.getElementById(canvasId);
     const ctx = canvas.getContext("2d");
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);

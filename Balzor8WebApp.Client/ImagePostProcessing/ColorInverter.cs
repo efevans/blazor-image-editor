@@ -5,7 +5,7 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
 {
     public class ColorInverter : IPostProcesser
     {
-        public byte[] Process(byte[] bytes, Dictionary<string, CanvasEffectOption> _)
+        public byte[] Process(byte[] bytes, int _width, int _height, Dictionary<string, CanvasEffectOption> _)
         {
             for (int i = 0; i < bytes.Length; i += 4)
             {

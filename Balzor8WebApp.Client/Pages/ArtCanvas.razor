@@ -81,7 +81,8 @@
     private bool ImageIsUploaded = false;
     private bool ShowStretchedImageAlert = false;
 
-    private byte[] _cleanImageBytes;
+    private byte[] _cleanImageBytes = null!;
+    private CanvasDimensions _dimensions = null!;
 
     private MudDropContainer<EffectItem> EffectsUIListRef { get; set; } = null!;
 
@@ -114,8 +115,11 @@
     private void RedrawCanvas()
     {
         // ResetImage(MainCanvasId, CleanCanvasId);
+        Console.WriteLine($"Redrawing Canvas: {Effects.Count} effects");
         var canvasBytes = _cleanImageBytes.ToArray();
+        Console.WriteLine("Finished Copying clean image bytes");
         ApplyEffects(canvasBytes);
+        Console.WriteLine("Setting Canvas");
         SetBytes(MainCanvasId, canvasBytes);
     }
 
@@ -159,8 +163,8 @@
         await JSModule.Value.InvokeVoidAsync("setImage", streamRef, MainCanvasRef);
         _cleanImageBytes = GetBytes(MainCanvasId);
 
-        var dimensions = await JSModule.Value.InvokeAsync<CanvasDimensions>("getDimensions", MainCanvasRef);
-        if (dimensions.Width > 1150)
+        _dimensions = await JSModule.Value.InvokeAsync<CanvasDimensions>("getDimensions", MainCanvasRef);
+        if (_dimensions.Width > 1150)
         {
             ShowStretchedImageAlert = true;
         }
@@ -195,7 +199,7 @@
             return bytes;
         }
         Log("Applying Effect");
-        return effect.Apply(bytes);
+        return effect.Apply(bytes, _dimensions.Width, _dimensions.Height);
     }
 
     private void ApplyEffects(byte[] bytes)
@@ -220,17 +224,16 @@
         }
     }
 
-    private class GenericCanvasEffect(IJSObjectReference jsModule, string name, List<CanvasEffectOption> options, IPostProcesser postProcess) : ICanvasEffect
+    private class GenericCanvasEffect(string name, List<CanvasEffectOption> options, IPostProcesser postProcess) : ICanvasEffect
     {
-        private IJSObjectReference JSModule { get; } = jsModule;
         public string Name => name;
         public bool Enabled { get; set; } = true;
         public List<CanvasEffectOption> Options => options;
         private IPostProcesser PostProcess => postProcess;
 
-        public byte[] Apply(byte[] bytes)
+        public byte[] Apply(byte[] bytes, int width, int height)
         {
-            PostProcess.Process(bytes, ArtCanvas.OptionsListToDictionary(Options));
+            PostProcess.Process(bytes, width, height, ArtCanvas.OptionsListToDictionary(Options));
             return bytes;
         }
     }
@@ -240,14 +243,14 @@
         public string Name { get; }
         public bool Enabled { get; set; }
         public List<CanvasEffectOption> Options { get; }
-        byte[] Apply(byte[] bytes);
+        byte[] Apply(byte[] bytes, int width, int height);
     }
 
     private class CanvasEffectFactory
     {
         public ICanvasEffect CreateFor(Effect effect, IJSObjectReference jsModule)
         {
-            CanvasEffectBuilder builder = new CanvasEffectBuilder(jsModule);
+            CanvasEffectBuilder builder = new CanvasEffectBuilder();
 
             switch (effect)
             {
@@ -256,6 +259,7 @@
                         .WithName("FS-Dither")
                         .WithSliderOption("Color Bits", "colorBits", 1, 1, 8, 1)
                         .WithCheckboxOption("Grayscale", "grayscale", false)
+                        .WithPostProcess(new FloydSteinbergDitherer())
                         .Build();
 
                 case Effect.OrderedDither:
@@ -292,9 +296,8 @@
         }
     }
 
-    private class CanvasEffectBuilder(IJSObjectReference jsModule)
+    private class CanvasEffectBuilder()
     {
-        private IJSObjectReference JSModule { get; } = jsModule;
         private string Name { get; set; } = String.Empty;
         private List<CanvasEffectOption> Options { get; set; } = new List<CanvasEffectOption>();
         private IPostProcesser PostProcess { get; set; } = new NoOpPostProcessor();
@@ -331,7 +334,7 @@
 
         public ICanvasEffect Build()
         {
-            var effect = new GenericCanvasEffect(JSModule, Name, Options, PostProcess);
+            var effect = new GenericCanvasEffect(Name, Options, PostProcess);
             Name = String.Empty;
             Options = new List<CanvasEffectOption>();
             PostProcess = new NoOpPostProcessor();
