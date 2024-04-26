@@ -11,15 +11,11 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
 
             if (options.Grayscale)
             {
-                for (int i = 0; i < bytes.Length; i += 4)
-                {
-                    bytes[i + 0] = 127;
-                }
-                return bytes;
                 Console.WriteLine("Starting Grayscale dither");
                 return ApplyGrayscaleDither(bytes, width, height, corrections, options);
             }
-            return bytes;
+            Console.WriteLine("Starting RGB dither");
+            return ApplyRGBDither(bytes, width, height, corrections, options);
         }
 
         private const float RightNeighborRatio = 7.0f / 16.0f;
@@ -29,24 +25,15 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
 
         private static byte[] ApplyGrayscaleDither(byte[] bytes, int width, int height, float[] corrections, Options options)
         {
-            void AccrueError(int x, int y, int xOffset, int yOffset, float[] corrections, float accruedCorrection, float correctionRatio)
+            void AccrueError(int x, int y, int xOffset, int yOffset, float[] corrections, float newlyAccruedCorrection, float correctionRatio)
             {
                 int index = GetIndexForCoordinates(x + xOffset, y + yOffset, width);
-                AccrueErrorForIndex(corrections, index, accruedCorrection, correctionRatio);
+                AccrueErrorForIndex(corrections, index, newlyAccruedCorrection, correctionRatio);
             }
-
-            int halfway = width * height * 2;
-            halfway -= (halfway % 4);
 
             for (int i = 0; i < bytes.Length; i += 4)
             {
-                //if (i == halfway)
-                //{
-                //    Console.WriteLine("Halfway through bytes");
-                //}
                 float colorAvg = (bytes[i + 0] + bytes[i + 1] + bytes[i + 2]) / 3.0f;
-                bytes[i + 0] = bytes[i + 1] = bytes[i + 2] = (byte)colorAvg;
-                continue;
                 var (greyValue, correction) = GetClosestValueWithError(colorAvg, corrections[i + 0], options.ColorStep);
                 bytes[i + 0] = bytes[i + 1] = bytes[i + 2] = greyValue;
                 var (x, y) = GetCoordinatesForIndex(i, width);
@@ -66,6 +53,47 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
                 if (!CoordinateIsOnRightEdge(x, width) && !CoordinateIsOnBottomEdge(y, height))
                 {
                     AccrueError(x, y, 0, 1, corrections, correction, BottomRightNeighborRatio);
+                }
+            }
+
+            return bytes;
+        }
+
+        private static byte[] ApplyRGBDither(byte[] bytes, int width, int height, float[] corrections, Options options)
+        {
+            void AccrueError(int x, int y, int xOffset, int yOffset, float[] corrections, float newlyAccruedRCorrection,
+                             float newlyAccruedGCorrection, float newlyAccruedBCorrection, float correctionRatio)
+            {
+                int index = GetIndexForCoordinates(x + xOffset, y + yOffset, width);
+                AccrueErrorForIndex(corrections, index + 0, newlyAccruedRCorrection, correctionRatio);
+                AccrueErrorForIndex(corrections, index + 1, newlyAccruedGCorrection, correctionRatio);
+                AccrueErrorForIndex(corrections, index + 2, newlyAccruedBCorrection, correctionRatio);
+            }
+
+            for (int i = 0; i < bytes.Length; i += 4)
+            {
+                float rCorrection, gCorrection, bCorrection;
+                (bytes[i + 0], rCorrection) = GetClosestValueWithError(bytes[i + 0], corrections[i + 0], options.ColorStep);
+                (bytes[i + 1], gCorrection) = GetClosestValueWithError(bytes[i + 1], corrections[i + 1], options.ColorStep);
+                (bytes[i + 2], bCorrection) = GetClosestValueWithError(bytes[i + 2], corrections[i + 2], options.ColorStep);
+
+                var (x, y) = GetCoordinatesForIndex(i, width);
+
+                if (!CoordinateIsOnRightEdge(x, width))
+                {
+                    AccrueError(x, y, 1, 0, corrections, rCorrection, gCorrection, bCorrection, RightNeighborRatio);
+                }
+                if (!CoordinateIsOnLeftEdge(x) && !CoordinateIsOnBottomEdge(y, height))
+                {
+                    AccrueError(x, y, -1, 1, corrections, rCorrection, gCorrection, bCorrection, BottomLeftNeighborRatio);
+                }
+                if (!CoordinateIsOnBottomEdge(y, height))
+                {
+                    AccrueError(x, y, 0, 1, corrections, rCorrection, gCorrection, bCorrection, BottomNeighborRatio);
+                }
+                if (!CoordinateIsOnRightEdge(x, width) && !CoordinateIsOnBottomEdge(y, height))
+                {
+                    AccrueError(x, y, 0, 1, corrections, rCorrection, gCorrection, bCorrection, BottomRightNeighborRatio);
                 }
             }
 
