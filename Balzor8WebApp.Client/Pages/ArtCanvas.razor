@@ -210,18 +210,18 @@
         }
     }
 
-    private void AddEffect(Effect effectType, bool apply = true)
+    private void AddEffect(Effect effectType/* , bool apply = true */)
     {
         var effect = (new CanvasEffectFactory()).CreateFor(effectType, JSModule.Value);
         Effects.Add(new EffectItem { Effect = effect, Order = Effects.Count });
         EffectsUIListRef.Refresh();
-        var canvasBytes = GetBytes(MainCanvasId);
+        // var canvasBytes = GetBytes(MainCanvasId);
 
-        if (apply)
-        {
-            canvasBytes = ApplyEffect(effect, canvasBytes);
-            SetBytes(MainCanvasId, canvasBytes);
-        }
+        // if (apply)
+        // {
+        //     canvasBytes = ApplyEffect(effect, canvasBytes);
+        //     SetBytes(MainCanvasId, canvasBytes);
+        // }
     }
 
     private class GenericCanvasEffect(string name, List<CanvasEffectOption> options, IPostProcesser postProcess) : ICanvasEffect
@@ -285,8 +285,8 @@
                 case Effect.Pixelate:
                     return builder
                         .WithName("Pixelate")
-                        .WithRadioOption("Type", "type", new() { "Average", "Saturation", "Naive", }, "Average")
                         .WithSliderOption("Strength", "strength", 2, 1, 5, 1)
+                        .WithPostProcess(new Pixelater())
                         .Build();
 
                 default:

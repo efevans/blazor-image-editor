@@ -39,7 +39,7 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
         {
             for (int i = 0; i < bytes.Length; i += 4)
             {
-                var (x, y) = GetCoordinatesForIndex(i, width);
+                var (x, y) = CommonProcessingMethods.GetCoordinatesForIndex(i, width);
                 var xPos = x % dimensions.Length;
                 var yPos = y % dimensions.Length;
                 var thresholdValue = dimensions.NormalizedThresholdMatrix[xPos][yPos];
@@ -101,13 +101,6 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
             var unnormalizedRGB = (roundedTotal * colorStep);
             byte clampedRGB = (byte)Math.Max(0, Math.Min(255, unnormalizedRGB));
             return clampedRGB;
-        }
-
-        private static (int, int) GetCoordinatesForIndex(int index, int width)
-        {
-            var x = (index % (width * 4)) / 4;
-            var y = (index - (x * 4)) / (width * 4);
-            return (x, y);
         }
 
         private static readonly List<List<byte>> _2Matrix =

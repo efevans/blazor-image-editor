@@ -27,7 +27,7 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
         {
             void AccrueError(int x, int y, int xOffset, int yOffset, float[] corrections, float newlyAccruedCorrection, float correctionRatio)
             {
-                int index = GetIndexForCoordinates(x + xOffset, y + yOffset, width);
+                int index = CommonProcessingMethods.GetIndexForCoordinates(x + xOffset, y + yOffset, width);
                 AccrueErrorForIndex(corrections, index, newlyAccruedCorrection, correctionRatio);
             }
 
@@ -36,7 +36,7 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
                 float colorAvg = (bytes[i + 0] + bytes[i + 1] + bytes[i + 2]) / 3.0f;
                 var (greyValue, correction) = GetClosestValueWithError(colorAvg, corrections[i + 0], options.ColorStep);
                 bytes[i + 0] = bytes[i + 1] = bytes[i + 2] = greyValue;
-                var (x, y) = GetCoordinatesForIndex(i, width);
+                var (x, y) = CommonProcessingMethods.GetCoordinatesForIndex(i, width);
 
                 if (!CoordinateIsOnRightEdge(x, width))
                 {
@@ -64,7 +64,7 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
             void AccrueError(int x, int y, int xOffset, int yOffset, float[] corrections, float newlyAccruedRCorrection,
                              float newlyAccruedGCorrection, float newlyAccruedBCorrection, float correctionRatio)
             {
-                int index = GetIndexForCoordinates(x + xOffset, y + yOffset, width);
+                int index = CommonProcessingMethods.GetIndexForCoordinates(x + xOffset, y + yOffset, width);
                 AccrueErrorForIndex(corrections, index + 0, newlyAccruedRCorrection, correctionRatio);
                 AccrueErrorForIndex(corrections, index + 1, newlyAccruedGCorrection, correctionRatio);
                 AccrueErrorForIndex(corrections, index + 2, newlyAccruedBCorrection, correctionRatio);
@@ -77,7 +77,7 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
                 (bytes[i + 1], gCorrection) = GetClosestValueWithError(bytes[i + 1], corrections[i + 1], options.ColorStep);
                 (bytes[i + 2], bCorrection) = GetClosestValueWithError(bytes[i + 2], corrections[i + 2], options.ColorStep);
 
-                var (x, y) = GetCoordinatesForIndex(i, width);
+                var (x, y) = CommonProcessingMethods.GetCoordinatesForIndex(i, width);
 
                 if (!CoordinateIsOnRightEdge(x, width))
                 {
@@ -124,18 +124,6 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
         private static void AccrueErrorForIndex(float[] errorsArray, int index, float addedValue, float correctionRatio)
         {
             errorsArray[index] = errorsArray[index] + (addedValue * correctionRatio);
-        }
-
-        private static int GetIndexForCoordinates(int x, int y, int width)
-        {
-            return (x + (y * width)) * 4;
-        }
-
-        private static (int, int) GetCoordinatesForIndex(int index, int width)
-        {
-            var x = (index % (width * 4)) / 4;
-            var y = (index - (x * 4)) / (width * 4);
-            return (x, y);
         }
 
         private static bool CoordinateIsOnLeftEdge(int x) => x == 0;
