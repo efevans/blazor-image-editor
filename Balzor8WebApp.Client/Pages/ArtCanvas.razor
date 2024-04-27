@@ -44,7 +44,6 @@
                 <MudButton Color="MudColor.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.FloydSteinbergDither); }">Floyd-Steinberg Dither</MudButton>
                 <MudButton Color="MudColor.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.OrderedDither); }">Ordered Dither</MudButton>
                 <MudButton Color="MudColor.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.Invert); }">Invert</MudButton>
-                <MudButton Color="MudColor.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.GammaCorrect); }">Gamma Correction</MudButton>
                 <MudButton Color="MudColor.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.Pixelate); }">Pixelate</MudButton>
             </MudStack>
             <MudDropContainer @ref="EffectsUIListRef" ItemIsDisabled="@((item) => !item.Draggable)" T="EffectItem" Items="Effects" ItemsSelector="@((item,dropzone) => true)" ItemDropped="ItemUpdated" Class="d-flex flex-wrap flex-grow-0 align-start" Style="width: 100%;">
@@ -136,7 +135,6 @@
     {
         FloydSteinbergDither,
         Invert,
-        GammaCorrect,
         Pixelate,
         OrderedDither
     }
@@ -275,11 +273,6 @@
                     return builder
                         .WithName("Invert")
                         .WithPostProcess(new ColorInverter())
-                        .Build();
-
-                case Effect.GammaCorrect:
-                    return builder
-                        .WithName("Gamma")
                         .Build();
 
                 case Effect.Pixelate:
