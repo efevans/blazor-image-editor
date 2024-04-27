@@ -40,7 +40,7 @@
 
     [Parameter]
     [EditorRequired]
-    public Action OnValueChangedCallback { get; set; } = null!;
+    public Action<string> OnValueChangedCallback { get; set; } = null!;
 
     [Parameter]
     [EditorRequired]
@@ -52,10 +52,12 @@
 
     private bool Enabled { get; set; } = true;
 
+    private int ImmediateCallbackCount = 0;
+
     private void OnEnableToggled(bool newValue)
     {
         EffectItem.Effect.Enabled = newValue;
-        OnValueChangedCallback();
+        OnValueChangedCallback("toggle");
     }
 
     private void OnDelete()
@@ -65,20 +67,25 @@
 
     private void OnValueChanged(ArtCanvas.CanvasEffectOption option, int newValue)
     {
+        if (ImmediateCallbackCount > 0)
+        {
+            ImmediateCallbackCount--;
+            return;
+        }
         option.Value = newValue;
-        OnValueChangedCallback();
+        OnValueChangedCallback($"int changed to {newValue}");
     }
 
     private void OnValueChanged(ArtCanvas.CanvasEffectOption option, string newValue)
     {
         option.StringValue = newValue;
-        OnValueChangedCallback();
+        OnValueChangedCallback("string changed");
     }
 
     private void OnValueChanged(ArtCanvas.CanvasEffectOption option, bool newValue)
     {
         option.BinaryValue = newValue;
-        OnValueChangedCallback();
+        OnValueChangedCallback("bool changed");
     }
 
     private void OnHandleMouseUp(MouseEventArgs _)
@@ -91,5 +98,11 @@
     {
         EffectItem.Draggable = true;
         OnDragStateChangedCallback();
+    }
+
+    protected override void OnInitialized()
+    {
+        Console.WriteLine($"Has {EffectItem.Effect.Options.Count} options");
+        ImmediateCallbackCount = EffectItem.Effect.Options.Where(o => o.InputType == ArtCanvas.CanvasEffectOptionInputType.Slider).Count();
     }
 }

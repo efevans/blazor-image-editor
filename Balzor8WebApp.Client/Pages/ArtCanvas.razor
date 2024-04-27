@@ -93,9 +93,10 @@
         RedrawCanvas();
     }
 
-    private void OnEffectOptionValueChangedCallback()
+    private void OnEffectOptionValueChangedCallback(string msg)
     {
         Log("ValueChanged callback");
+        Log(msg);
         RedrawCanvas();
     }
 
@@ -213,12 +214,12 @@
         var effect = (new CanvasEffectFactory()).CreateFor(effectType, JSModule.Value);
         Effects.Add(new EffectItem { Effect = effect, Order = Effects.Count });
         EffectsUIListRef.Refresh();
-        // var canvasBytes = GetBytes(MainCanvasId);
+        var canvasBytes = GetBytes(MainCanvasId);
 
         // if (apply)
         // {
-        //     canvasBytes = ApplyEffect(effect, canvasBytes);
-        //     SetBytes(MainCanvasId, canvasBytes);
+        canvasBytes = ApplyEffect(effect, canvasBytes);
+        SetBytes(MainCanvasId, canvasBytes);
         // }
     }
 
