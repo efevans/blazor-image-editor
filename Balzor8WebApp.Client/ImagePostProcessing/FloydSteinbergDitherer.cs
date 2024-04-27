@@ -100,7 +100,7 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
             return bytes;
         }
 
-        private record Options(bool Grayscale, int ColorBits, int ColorStep);
+        private record Options(bool Grayscale,int ColorStep);
 
         private static Options ParseOptions(Dictionary<string, ArtCanvas.CanvasEffectOption> optionsDict)
         {
@@ -108,7 +108,7 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
             int colorBits = optionsDict["colorBits"].Value;
             int colorStep = (int)(256f / colorBits);
 
-            return new(grayscale, colorBits, colorStep);
+            return new(grayscale, colorStep);
         }
 
         private static (byte, float) GetClosestValueWithError(float value, float correction, int colorStep)

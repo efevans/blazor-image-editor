@@ -12,6 +12,6 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
         /// <param name="height"></param>
         /// <param name="options"></param>
         /// <returns></returns>
-        byte[] Process(byte[] bytes, int width, int height, Dictionary<string, CanvasEffectOption> options);
+        byte[] Process(byte[] bytes, int width, int height, Dictionary<string, CanvasEffectOption> optionsDict);
     }
 }
