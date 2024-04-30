@@ -18,7 +18,7 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
             public byte[] Process(byte[] bytes, int width, int height, Dictionary<string, ArtCanvas.CanvasEffectOption> optionsDict)
             {
                 Options options = ParseOptions(optionsDict);
-                Dictionary<int, RGBTriple> storedPixelValues = new Dictionary<int, RGBTriple>();
+                Dictionary<int, RGBTriple> storedPixelValues = [];
 
                 for (int i = 0; i < bytes.Length; i += 4)
                 {
@@ -35,7 +35,7 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
                 return bytes;
             }
 
-            private (byte, byte, byte) GetAveragePixelationValueForIndex(byte[] bytes, int index, Options options, Dictionary<int, RGBTriple> storedIndexValues, int width, int height)
+            private static (byte, byte, byte) GetAveragePixelationValueForIndex(byte[] bytes, int index, Options options, Dictionary<int, RGBTriple> storedIndexValues, int width, int height)
             {
                 CommonProcessingMethods.GetCoordinatesForIndex(index, width, out int x, out int y);
                 var topLeftX = x - (x % options.PixelationLength);

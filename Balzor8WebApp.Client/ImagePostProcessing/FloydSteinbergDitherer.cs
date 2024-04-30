@@ -72,10 +72,9 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
 
             for (int i = 0; i < bytes.Length; i += 4)
             {
-                float rCorrection, gCorrection, bCorrection;
-                GetClosestValueWithError(bytes[i + 0], corrections[i + 0], options.ColorStep, out bytes[i + 0], out rCorrection);
-                GetClosestValueWithError(bytes[i + 1], corrections[i + 1], options.ColorStep, out bytes[i + 1], out gCorrection);
-                GetClosestValueWithError(bytes[i + 2], corrections[i + 2], options.ColorStep, out bytes[i + 2], out bCorrection);
+                GetClosestValueWithError(bytes[i + 0], corrections[i + 0], options.ColorStep, out bytes[i + 0], out float rCorrection);
+                GetClosestValueWithError(bytes[i + 1], corrections[i + 1], options.ColorStep, out bytes[i + 1], out float gCorrection);
+                GetClosestValueWithError(bytes[i + 2], corrections[i + 2], options.ColorStep, out bytes[i + 2], out float bCorrection);
 
                 CommonProcessingMethods.GetCoordinatesForIndex(i, width, out int x, out int y);
 

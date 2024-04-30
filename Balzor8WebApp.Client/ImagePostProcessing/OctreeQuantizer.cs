@@ -16,9 +16,10 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
             int i = 0;
             foreach (var pixelColor in orderedPixelList)
             {
-                bytes[i + 0] = pixelColor.Red;
-                bytes[i + 1] = pixelColor.Green;
-                bytes[i + 2] = pixelColor.Blue;
+                var pixelPaletteColor = palette.GetPaletteColorFromColor(pixelColor);
+                bytes[i + 0] = pixelPaletteColor.Red;
+                bytes[i + 1] = pixelPaletteColor.Green;
+                bytes[i + 2] = pixelPaletteColor.Blue;
                 i += 4;
             }
 
@@ -331,7 +332,7 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
 
             private class SquarePalettizer : IPalettizer
             {
-                private readonly PaletteMatch MyPaletteMatch = new PaletteMatch();
+                private readonly PaletteMatch MyPaletteMatch = new();
 
                 public RGBColor GetPaletteColorFromColor(OctreeQuantization tree, RGBColor color)
                 {
@@ -341,7 +342,7 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
                     }
 
                     int dsqBest = int.MaxValue;
-                    RGBColor best = new RGBColor(0, 0, 0);
+                    RGBColor best = new(0, 0, 0);
                     foreach (var paletteColor in tree.Palette)
                     {
                         int dsq = 0;
