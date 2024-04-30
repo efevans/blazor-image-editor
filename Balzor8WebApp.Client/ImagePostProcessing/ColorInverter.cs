@@ -1,5 +1,4 @@
-﻿
-using static Balzor8WebApp.Client.Pages.ArtCanvas;
+﻿using static Balzor8WebApp.Client.Pages.ArtCanvas;
 
 namespace Balzor8WebApp.Client.ImagePostProcessing
 {

@@ -37,7 +37,7 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
 
             private (byte, byte, byte) GetAveragePixelationValueForIndex(byte[] bytes, int index, Options options, Dictionary<int, RGBTriple> storedIndexValues, int width, int height)
             {
-                var (x, y) = CommonProcessingMethods.GetCoordinatesForIndex(index, width);
+                CommonProcessingMethods.GetCoordinatesForIndex(index, width, out int x, out int y);
                 var topLeftX = x - (x % options.PixelationLength);
                 var topLeftY = y - (y % options.PixelationLength);
                 var topLeftIndex = CommonProcessingMethods.GetIndexForCoordinates(topLeftX, topLeftY, width);

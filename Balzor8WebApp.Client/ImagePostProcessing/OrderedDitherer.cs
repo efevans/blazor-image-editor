@@ -39,7 +39,7 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
         {
             for (int i = 0; i < bytes.Length; i += 4)
             {
-                var (x, y) = CommonProcessingMethods.GetCoordinatesForIndex(i, width);
+                CommonProcessingMethods.GetCoordinatesForIndex(i, width, out int x, out int y);
                 var xPos = x % dimensions.Length;
                 var yPos = y % dimensions.Length;
                 var thresholdValue = dimensions.NormalizedThresholdMatrix[xPos][yPos];

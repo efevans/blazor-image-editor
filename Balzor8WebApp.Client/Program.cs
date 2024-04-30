@@ -1,5 +1,6 @@
 using Balzor8WebApp.Shared.Service;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using MudBlazor;
 using MudBlazor.Services;
 
 namespace Balzor8WebApp.Client

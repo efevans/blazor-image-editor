@@ -34,9 +34,9 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
             for (int i = 0; i < bytes.Length; i += 4)
             {
                 float colorAvg = (bytes[i + 0] + bytes[i + 1] + bytes[i + 2]) / 3.0f;
-                var (greyValue, correction) = GetClosestValueWithError(colorAvg, corrections[i + 0], options.ColorStep);
+                GetClosestValueWithError(colorAvg, corrections[i + 0], options.ColorStep, out byte greyValue, out float correction);
                 bytes[i + 0] = bytes[i + 1] = bytes[i + 2] = greyValue;
-                var (x, y) = CommonProcessingMethods.GetCoordinatesForIndex(i, width);
+                CommonProcessingMethods.GetCoordinatesForIndex(i, width, out int x, out int y);
 
                 if (!CoordinateIsOnRightEdge(x, width))
                 {
@@ -73,11 +73,11 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
             for (int i = 0; i < bytes.Length; i += 4)
             {
                 float rCorrection, gCorrection, bCorrection;
-                (bytes[i + 0], rCorrection) = GetClosestValueWithError(bytes[i + 0], corrections[i + 0], options.ColorStep);
-                (bytes[i + 1], gCorrection) = GetClosestValueWithError(bytes[i + 1], corrections[i + 1], options.ColorStep);
-                (bytes[i + 2], bCorrection) = GetClosestValueWithError(bytes[i + 2], corrections[i + 2], options.ColorStep);
+                GetClosestValueWithError(bytes[i + 0], corrections[i + 0], options.ColorStep, out bytes[i + 0], out rCorrection);
+                GetClosestValueWithError(bytes[i + 1], corrections[i + 1], options.ColorStep, out bytes[i + 1], out gCorrection);
+                GetClosestValueWithError(bytes[i + 2], corrections[i + 2], options.ColorStep, out bytes[i + 2], out bCorrection);
 
-                var (x, y) = CommonProcessingMethods.GetCoordinatesForIndex(i, width);
+                CommonProcessingMethods.GetCoordinatesForIndex(i, width, out int x, out int y);
 
                 if (!CoordinateIsOnRightEdge(x, width))
                 {
@@ -111,14 +111,16 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
             return new(grayscale, colorStep);
         }
 
-        private static (byte, float) GetClosestValueWithError(float value, float correction, int colorStep)
+        private static void GetClosestValueWithError(float value, float correction, int colorStep, out byte ditheredValue,
+            out float newCorrection)
         {
             var correctedValue = value + correction;
             var normalizedValue = (correctedValue + 1) / colorStep;
             var roundedTotal = (int)Math.Round(normalizedValue);
             var unnormalizedRGB = roundedTotal * colorStep;
             var clampedRGB = (byte)Math.Max(0, Math.Min(255, unnormalizedRGB));
-            return (clampedRGB, correctedValue - clampedRGB);
+            ditheredValue = clampedRGB;
+            newCorrection = correctedValue - clampedRGB;
         }
 
         private static void AccrueErrorForIndex(float[] errorsArray, int index, float addedValue, float correctionRatio)

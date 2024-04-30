@@ -15,6 +15,7 @@ else
     <InputFile OnChange="LoadFiles" multiple />
 
     <canvas id="@MainCanvasId" @ref="MainCanvasRef" class="flex-grow-0" style="border: 1px solid black;"></canvas>
+    <div>size: @_size</div>
 }
 
 @code {
@@ -22,6 +23,8 @@ else
 
     private const long maxFileSize = 1024 * 1024 * 10;
     private const string MainCanvasId = "tutorial";
+
+    private long _size = 0;
 
     private ElementReference MainCanvasRef { get; set; }
 
@@ -31,6 +34,7 @@ else
 
     private async Task LoadFiles(InputFileChangeEventArgs e)
     {
+        _size = e.File.Size;
         var streamRef = new DotNetStreamReference(e.File.OpenReadStream(e.File.Size));
         await JSModule.Value.InvokeVoidAsync("setImage", streamRef, MainCanvasRef);
         // await Task.Delay(150);

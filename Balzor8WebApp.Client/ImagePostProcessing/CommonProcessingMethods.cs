@@ -2,11 +2,10 @@
 {
     public static class CommonProcessingMethods
     {
-        public static (int, int) GetCoordinatesForIndex(int index, int width)
+        public static void GetCoordinatesForIndex(int index, int width, out int x, out int y)
         {
-            var x = (index % (width * 4)) / 4;
-            var y = (index - (x * 4)) / (width * 4);
-            return (x, y);
+            x = (index % (width * 4)) / 4;
+            y = (index - (x * 4)) / (width * 4);
         }
 
         public static int GetIndexForCoordinates(int x, int y, int width)

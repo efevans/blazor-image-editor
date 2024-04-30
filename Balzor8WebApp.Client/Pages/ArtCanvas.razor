@@ -1,9 +1,12 @@
 ﻿@page "/canvas"
 @using System.Text.Json
 @using System.Text.Json.Serialization
+@using System.Diagnostics
 @implements IAsyncDisposable
 @inject IJSRuntime JS
 @rendermode InteractiveWebAssembly
+
+<div>@_drawTime</div>
 
 <MudStack Row="true" AlignItems="AlignItems.Start" Justify="Justify.FlexStart">
     <InputFile id="@FileInputId" @ref="InputFileRef" style="display: none;" OnChange="ShowPreview" />
@@ -70,6 +73,8 @@
     private const string CleanCanvasId = "clean-canvas";
     private const string FileInputId = "mud-file-uploader";
 
+    private long _drawTime = 0;
+
     private ElementReference MainCanvasRef { get; set; }
     private ElementReference CleanCanvasRef { get; set; }
     private InputFile? InputFileRef { get; set; }
@@ -114,6 +119,8 @@
 
     private void RedrawCanvas()
     {
+        Stopwatch stopwatch = new Stopwatch();
+        stopwatch.Start();
         // ResetImage(MainCanvasId, CleanCanvasId);
         Console.WriteLine($"Redrawing Canvas: {Effects.Count} effects");
         var canvasBytes = _cleanImageBytes.ToArray();
@@ -121,6 +128,9 @@
         ApplyEffects(canvasBytes);
         Console.WriteLine("Setting Canvas");
         SetBytes(MainCanvasId, canvasBytes);
+        stopwatch.Stop();
+        _drawTime = stopwatch.ElapsedMilliseconds;
+        base.StateHasChanged();
     }
 
     private List<EffectItem> Effects = new();
@@ -214,10 +224,10 @@
         var effect = (new CanvasEffectFactory()).CreateFor(effectType, JSModule.Value);
         Effects.Add(new EffectItem { Effect = effect, Order = Effects.Count });
         EffectsUIListRef.Refresh();
-        var canvasBytes = GetBytes(MainCanvasId);
 
         // if (apply)
         // {
+        var canvasBytes = GetBytes(MainCanvasId);
         canvasBytes = ApplyEffect(effect, canvasBytes);
         SetBytes(MainCanvasId, canvasBytes);
         // }
