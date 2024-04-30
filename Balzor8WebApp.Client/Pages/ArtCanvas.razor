@@ -46,6 +46,7 @@
             <MudStack Row="true" Spacing="2" Class="flex-wrap">
                 <MudButton Color="MudColor.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.FloydSteinbergDither); }">Floyd-Steinberg Dither</MudButton>
                 <MudButton Color="MudColor.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.OrderedDither); }">Ordered Dither</MudButton>
+                <MudButton Color="MudColor.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.Quantization); }">Quantization</MudButton>
                 <MudButton Color="MudColor.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.Invert); }">Invert</MudButton>
                 <MudButton Color="MudColor.Primary" Variant="Variant.Filled" OnClick="() => { AddEffect(Effect.Pixelate); }">Pixelate</MudButton>
             </MudStack>
@@ -147,7 +148,8 @@
         FloydSteinbergDither,
         Invert,
         Pixelate,
-        OrderedDither
+        OrderedDither,
+        Quantization,
     }
 
     protected override async Task OnInitializedAsync()
@@ -291,6 +293,13 @@
                         .WithName("Pixelate")
                         .WithSliderOption("Strength", "strength", 2, 1, 5, 1)
                         .WithPostProcess(new Pixelater())
+                        .Build();
+
+                case Effect.Quantization:
+                    return builder
+                        .WithName("Quantization")
+                        .WithSliderOption("Palette Size", "paletteSize", 12, 2, 127, 1)
+                        .WithPostProcess(new OctreeQuantizer())
                         .Build();
 
                 default:

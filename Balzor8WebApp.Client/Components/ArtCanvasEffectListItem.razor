@@ -7,7 +7,7 @@
             <div class="border-separated-list">
                 @if (option.InputType == ArtCanvas.CanvasEffectOptionInputType.Slider)
                 {
-                    <MudSlider ValueChanged="(int val) => { OnValueChanged(option, val); }" Value="@option.Value" Min="@option.MinValue" Max="@option.MaxValue" TickMarks="true" Step="1" ValueLabel="true">@option.Name.ToLower()</MudSlider>
+                    <MudSlider ValueChanged="(int val) => { OnValueChanged(option, val); }" Value="@option.Value" Min="@option.MinValue" Max="@option.MaxValue" TickMarks="true" Step="1" ValueLabel="true" Immediate="false">@option.Name.ToLower()</MudSlider>
                 }
                 else if (option.InputType == ArtCanvas.CanvasEffectOptionInputType.Checkbox)
                 {
