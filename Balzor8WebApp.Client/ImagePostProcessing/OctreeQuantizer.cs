@@ -7,11 +7,14 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
     {
         public byte[] Process(byte[] bytes, int _width, int _height, Dictionary<string, ArtCanvas.CanvasEffectOption> optionsDict)
         {
+            var options = ParseOptions(optionsDict);
+            int targetPaletteSize = options.PaletteSize;
+
             var colorCounts = GetRGBColorCount(bytes, out List<RGBColor> orderedPixelList);
 
             OctreeQuantization quantizationTree = new();
             quantizationTree.AddColors(colorCounts);
-            var palette = quantizationTree.MakePalette(12);
+            var palette = quantizationTree.MakePalette(targetPaletteSize);
 
             int i = 0;
             foreach (var pixelColor in orderedPixelList)
@@ -24,6 +27,15 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
             }
 
             return bytes;
+        }
+
+        private record Options(int PaletteSize);
+
+        private static Options ParseOptions(Dictionary<string, ArtCanvas.CanvasEffectOption> optionsDict)
+        {
+            int paletteSize = optionsDict["paletteSize"].Value;
+
+            return new(paletteSize);
         }
 
         private static Dictionary<RGBColor, int> GetRGBColorCount(byte[] bytes, out List<RGBColor> orderedPixelList)
