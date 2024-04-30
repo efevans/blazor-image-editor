@@ -85,38 +85,42 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
 
             private void AddColor(RGBColor color, int count)
             {
-                Root.AddColor(color, count, 0);
+                Root.AddColor(color, count, this.Levels, 0);
             }
 
             public IPalette MakePalette(int targetPaletteSize)
             {
                 int paletteSize = Root.LeafCount();
-                int i;
-                for (i = MAXDEPTH - 2; i >= 0; i--)
-                {
-                    foreach (var node in Levels[i])
-                    {
-                        int removed = node.Reduce();
-                        paletteSize -= removed;
-                    }
-                    if (Levels[i].Count > targetPaletteSize && (i > 0 ? Levels[i - 1].Count : 1) <= targetPaletteSize)
-                    {
-                        break;
-                    }
-                }
-                var leafReduceQueue = GetOrderedNodesByPixelCount(Levels[i]);
 
-                foreach (var nodeToMerge in leafReduceQueue)
+                if (paletteSize > targetPaletteSize)
                 {
-                    bool paletteSizeWasReduced = nodeToMerge.MergeToParent();
-                    if (paletteSizeWasReduced)
+                    int i;
+                    for (i = MAXDEPTH - 2; i >= 0; i--)
                     {
-                        paletteSize--;
+                        foreach (var node in Levels[i])
+                        {
+                            int removed = node.Reduce();
+                            paletteSize -= removed;
+                        }
+                        if (Levels[i].Count > targetPaletteSize && (i > 0 ? Levels[i - 1].Count : 1) <= targetPaletteSize)
+                        {
+                            break;
+                        }
                     }
+                    var leafReduceQueue = GetOrderedNodesByPixelCount(Levels[i]);
 
-                    if (paletteSize <= targetPaletteSize)
+                    foreach (var nodeToMerge in leafReduceQueue)
                     {
-                        break;
+                        bool paletteSizeWasReduced = nodeToMerge.MergeToParent();
+                        if (paletteSizeWasReduced)
+                        {
+                            paletteSize--;
+                        }
+
+                        if (paletteSize <= targetPaletteSize)
+                        {
+                            break;
+                        }
                     }
                 }
 
@@ -129,7 +133,7 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
 
             private const int MAXDEPTH = 8;
             private readonly Node Root;
-            private static readonly List<List<Node>> Levels = [];
+            private readonly List<List<Node>> Levels = [];
             private readonly List<RGBColor> Palette = [];
             private readonly SquarePalettizer Palettizer;
 
@@ -166,33 +170,7 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
                     return palette;
                 }
 
-                public void AddColor(RGBColor color, int level)
-                {
-                    if (level >= MAXDEPTH)
-                    {
-                        PixelCount++;
-                        Red += color.Red;
-                        Green += color.Green;
-                        Blue += color.Blue;
-                        HasColorInfo = true;
-                        return;
-                    }
-
-                    int index = GetIndexForColor(color, level);
-                    if (Children[index] == null)
-                    {
-                        var newNode = new Node()
-                        {
-                            Parent = this
-                        };
-                        Children[index] = newNode;
-                        Levels[level].Add(newNode);
-                    }
-
-                    Children[index]?.AddColor(color, level + 1);
-                }
-
-                public void AddColor(RGBColor color, int count, int level)
+                public void AddColor(RGBColor color, int count, List<List<Node>> levels, int level)
                 {
                     if (level >= MAXDEPTH)
                     {
@@ -212,10 +190,10 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
                             Parent = this
                         };
                         Children[index] = newNode;
-                        Levels[level].Add(newNode);
+                        levels[level].Add(newNode);
                     }
 
-                    Children[index]?.AddColor(color, count, level + 1);
+                    Children[index]?.AddColor(color, count, levels, level + 1);
                 }
 
                 public int Reduce()
