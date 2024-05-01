@@ -322,11 +322,11 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
 
             private class SquarePalettizer : IPalettizer
             {
-                private readonly PaletteMatch MyPaletteMatch = new();
+                private readonly Dictionary<RGBColor, RGBColor> ColorMap = [];
 
                 public RGBColor GetPaletteColorFromColor(OctreeQuantization tree, RGBColor color)
                 {
-                    if (MyPaletteMatch.TryGetColorMap(color, out var mapColor))
+                    if (ColorMap.TryGetValue(color, out var mapColor))
                     {
                         return mapColor;
                     }
@@ -351,28 +351,8 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
                         }
                     }
 
-                    MyPaletteMatch.AddColorMapping(color, best);
+                    ColorMap.Add(color, best);
                     return best;
-                }
-
-                private class PaletteMatch
-                {
-                    private readonly Dictionary<RGBColor, RGBColor> ColorMap = [];
-
-                    public bool TryGetColorMap(RGBColor canvasColor, out RGBColor mapColor)
-                    {
-                        if (ColorMap.TryGetValue(canvasColor, out mapColor))
-                        {
-                            return true;
-                        }
-                        mapColor = new RGBColor(0, 0, 0);
-                        return false;
-                    }
-
-                    public void AddColorMapping(RGBColor canvasColor, RGBColor mappedColor)
-                    {
-                        ColorMap.Add(canvasColor, mappedColor);
-                    }
                 }
             }
         }
