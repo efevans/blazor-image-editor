@@ -298,7 +298,8 @@
                 case Effect.Quantization:
                     return builder
                         .WithName("Quantization")
-                        .WithSliderOption("Palette Size", "paletteSize", 12, 2, 127, 1)
+                        // .WithSliderOption("Palette Size", "paletteSize", 12, 2, 127, 1)
+                        .WithNumericField("Palette Size", "paletteSize", 12, 2, 127, 1)
                         .WithPostProcess(new OctreeQuantizer())
                         .Build();
 
@@ -343,6 +344,12 @@
         public CanvasEffectBuilder WithRadioOption(string name, string key, List<string> selectOptions, string defaultValue)
         {
             Options.Add(CanvasEffectOption.NewRadioOption(name, key, selectOptions, defaultValue));
+            return this;
+        }
+
+        public CanvasEffectBuilder WithNumericField(string name, string key, int initialValue, int minValue, int maxValue, int step)
+        {
+            Options.Add(new CanvasEffectOption(name, key, CanvasEffectOptionInputType.NumericField, initialValue, minValue, maxValue, step));
             return this;
         }
 
@@ -414,7 +421,8 @@
     {
         Slider,
         Checkbox,
-        Radio
+        Radio,
+        NumericField
     }
 
     private static Dictionary<string, CanvasEffectOption> OptionsListToDictionary(List<CanvasEffectOption> options) => options.ToDictionary(o => o.Key, o => o);
