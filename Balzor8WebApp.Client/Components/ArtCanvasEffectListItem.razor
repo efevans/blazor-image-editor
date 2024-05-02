@@ -1,6 +1,13 @@
 ﻿@using Balzor8WebApp.Client.Pages
+
+<style>
+.mud-slider > .mud-typography {
+  margin-top: 0px;
+}
+</style>
+
 <MudPaper Class="d-flex align-start pl-4 pr-2 pt-4 gap-2 cursor-default" MinHeight="48px" Square="true" Elevation="0">
-    <MudText>@EffectItem.Effect.Name</MudText>
+    <MudText Style="width: 20%;">@EffectItem.Effect.Name</MudText>
     <MudStack AlignItems="AlignItems.Start" Justify="Justify.FlexStart" Style="width: 40%;">
         @foreach (var option in EffectItem.Effect.Options)
         {
@@ -8,6 +15,10 @@
                 @if (option.InputType == ArtCanvas.CanvasEffectOptionInputType.Slider)
                 {
                     <MudSlider ValueChanged="(int val) => { OnValueChanged(option, val); }" Value="@option.Value" Min="@option.MinValue" Max="@option.MaxValue" TickMarks="true" Step="1" ValueLabel="true" Immediate="false">@option.Name.ToLower()</MudSlider>
+                }
+                else if (option.InputType == ArtCanvas.CanvasEffectOptionInputType.NumericField)
+                {
+                    <MudNumericField Label="Colors" ValueChanged="(int val) => { OnValueChanged(option, val); }" Value="@option.Value" Min="@option.MinValue" Max="@option.MaxValue" TickMarks="true" Step="1" ValueLabel="true" Immediate="false">@option.Name.ToLower()</MudNumericField>
                 }
                 else if (option.InputType == ArtCanvas.CanvasEffectOptionInputType.Checkbox)
                 {
