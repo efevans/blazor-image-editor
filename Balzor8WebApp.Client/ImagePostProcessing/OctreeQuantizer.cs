@@ -10,21 +10,30 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
             var options = ParseOptions(optionsDict);
             int targetPaletteSize = options.PaletteSize;
 
-            var colorCounts = GetRGBColorCount(bytes, out List<RGBColor> orderedPixelList);
+            var colorCounts = GetRGBColorCount(bytes);
 
             OctreeQuantization quantizationTree = new();
             quantizationTree.AddColors(colorCounts);
             var palette = quantizationTree.MakePalette(targetPaletteSize);
 
-            int i = 0;
-            foreach (var pixelColor in orderedPixelList)
+            Parallel.For(0, bytes.Length / 4, pixelIndex =>
             {
-                var pixelPaletteColor = palette.GetPaletteColorFromColor(pixelColor);
+                var i = pixelIndex * 4;
+                var pixelPaletteColor = palette.GetPaletteColorFromColor(new RGBColor(bytes[i + 0], bytes[i + 1], bytes[i + 2]));
                 bytes[i + 0] = pixelPaletteColor.Red;
                 bytes[i + 1] = pixelPaletteColor.Green;
                 bytes[i + 2] = pixelPaletteColor.Blue;
-                i += 4;
-            }
+            });
+
+            //int i = 0;
+            //foreach (var pixelColor in orderedPixelList)
+            //{
+            //    var pixelPaletteColor = palette.GetPaletteColorFromColor(pixelColor);
+            //    bytes[i + 0] = pixelPaletteColor.Red;
+            //    bytes[i + 1] = pixelPaletteColor.Green;
+            //    bytes[i + 2] = pixelPaletteColor.Blue;
+            //    i += 4;
+            //}
 
             return bytes;
         }
@@ -38,15 +47,13 @@ namespace Balzor8WebApp.Client.ImagePostProcessing
             return new(paletteSize);
         }
 
-        private static Dictionary<RGBColor, int> GetRGBColorCount(byte[] bytes, out List<RGBColor> orderedPixelList)
+        private static Dictionary<RGBColor, int> GetRGBColorCount(byte[] bytes)
         {
             var colorCount = new Dictionary<RGBColor, int>();
-            orderedPixelList = [];
 
             for (var i = 0; i < bytes.Length; i += 4)
             {
                 var rgb = new RGBColor(bytes[i + 0], bytes[i + 1], bytes[i + 2]);
-                orderedPixelList.Add(rgb);
                 if (!colorCount.TryGetValue(rgb, out int value))
                 {
                     value = 0;
